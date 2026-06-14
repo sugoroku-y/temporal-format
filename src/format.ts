@@ -89,6 +89,10 @@ const formatMap = {
     ) => string;
 };
 
+interface FormatOptions {
+    locale?: Locale;
+}
+
 /**
  * 指定された書式文字列に従って、日付時刻を文字列に変換します。
  *
@@ -98,30 +102,26 @@ const formatMap = {
  * | --- | :---| --- | --- |
  * | `yyyy` | `year` | `2026` | 4 桁の西暦 |
  * | `yy` | `year` | `26` | 下2桁の西暦 |
- * | `M` | `month` | `8` | 桁揃えなしの月 |
- * | `MM` | `month` | `08` | 2 桁の月 |
- * | `MMM` | `month` | `Aug` | 月の英語略称 |
- * | `MMMM` | `month` | `August` | 月の英語表記 |
- * | `d` | `day` | `9` | 桁揃えなしの日 |
- * | `dd` | `day` | `09` | 2 桁の日 |
- * | `H` | `hour` | `21` | 24時間表記の時間 |
- * | `HH` | `hour` | `21` | 2 桁の 24 時間表記の時間 |
- * | `h` | `hour` | `9` | 12時間表記の時間 |
- * | `hh` | `hour` | `09` | 2 桁の 12 時間表記の時間 |
- * | `a` | `hour` | `PM` | 午前/午後 |
- * | `m` | `minute` | `3` | 桁揃えなしの分 |
- * | `mm` | `minute` | `03` | 2 桁の分 |
- * | `s` | `second` | `5` | 桁揃えなしの秒 |
- * | `ss` | `second` | `05` | 2 桁の秒 |
- * | `S` | `millisecond` | `1` | 1 桁のミリ秒 |
- * | `SS` | `millisecond` | `12` | 2 桁のミリ秒 |
- * | `SSS` | `millisecond` | `123` | 3 桁のミリ秒 |
- * | `SSSS` | `millisecond`<br>`microsecond`<br>`nanosecond` | `123456789` | 9 桁のミリ秒 |
- * | `E`| `dayOfWeek` | `Thu` | 曜日の英語略称 |
- * | `EEE` | `dayOfWeek` | `Thu` | 曜日の英語略称 |
- * | `EEEE` | `dayOfWeek` | `Thursday` | 曜日の英語表記 |
+ * | `M` | `month` | `8`, `12` | 桁揃えなしの月 |
+ * | `MM` | `month` | `08`, `12` | 2 桁の月 |
+ * | `MMM` | `month` | `Aug`, `Dec` | 月の英語略称 |
+ * | `MMMM` | `month` | `August`, `December` | 月の英語表記 |
+ * | `d` | `day` | `9`, `28` | 桁揃えなしの日 |
+ * | `dd` | `day` | `09`, `28` | 2 桁の日 |
+ * | `H` | `hour` | `02`, `21` | 24時間表記の時間 |
+ * | `HH` | `hour` | `02`, `21` | 2 桁の 24 時間表記の時間 |
+ * | `h` | `hour` | `9`, `12` | 12時間表記の時間 |
+ * | `hh` | `hour` | `09`, `12` | 2 桁の 12 時間表記の時間 |
+ * | `a` | `hour` | `AM`, `PM` | 午前/午後 |
+ * | `m` | `minute` | `3`, `56` | 桁揃えなしの分 |
+ * | `mm` | `minute` | `03`, `56` | 2 桁の分 |
+ * | `s` | `second` | `5`, `48` | 桁揃えなしの秒 |
+ * | `ss` | `second` | `05`, `48` | 2 桁の秒 |
+ * | `S`, `SS`, `SSS`, ...`SSSSSSSSS` | `millisecond`, `microsecond`, `nanosecond` | `1`, `12`, `123`, ...`123456789` | 1桁〜9桁の小数点以下の秒 |
+ * | `E`, `EE`, `EEE`| `dayOfWeek` | `Mon`, `Thu` | 曜日の英語略称 |
+ * | `EEEE` | `dayOfWeek` | `Monday`, `Thursday` | 曜日の英語表記 |
  *
- * 将来の拡張のため、同じアルファベットが1文字から4文字連続しているものは予約されており、
+ * 将来の拡張のため、同じアルファベットが1文字から9文字連続しているものは予約されており、
  * 上記の表にないものが使用されるとエラーになります。
  *
  * アルファベットを単なる文字列として使用したい場合は、シングルクォートで囲む必要があります。
@@ -133,23 +133,36 @@ const formatMap = {
  * クォートされた文字列の中で、シングルクオートを使いたい場合にも、2 つ連続してシングルクォートを使用する必要があります。
  * 例えば、`'o''clock'` は文字列 "o'clock" に変換されます。
  *
+ * 閉じられていないシングルクォートがあるとエラーになります。
+ *
  * 日付や時刻に変換される書式文字列が一つもないとエラーになります。
  *
- * @param formatString 文字列に変換するための書式文字列
  * @param target 文字列に変換する日付時刻。
+ * @param formatString 文字列に変換するための書式文字列
  * @param options オプション
  * @param options.locale ロケール。省略した場合は'en-US'が使用されます。
- * - 'en-US': 英語(アメリカ合衆国)
- * - 'ja-JP': 日本語(日本) \
- *   EやEEEEは木や金曜日の表記になります。\
- *   aは午前/午後の表記になります。
+ * - `en-US`: 英語(アメリカ合衆国)
+ * - `ja-JP`: 日本語(日本)
+ *   |書式|結果|
+ *   |-|-|
+ *   |`MMM`, `MMMM`|`1月`〜`12月`|
+ *   |`E`, `EE`, `EEE`|`月`〜`日`|
+ *   |`EEEE`| `月曜日`〜`日曜日`|
+ *   |`a`|`午前`, `午後`|
  * - その他のロケールは未対応のため、指定するとエラーになります。
  * @param _ 書式文字列の検査のための引数。この引数を指定する必要はありません。
+ * @returns 書式に従って変換された文字列
+ * @throws 以下の場合に例外が投げられます
+ * - 書式文字列に10文字以上の連続したアルファベットを指定した
+ * - 書式文字列に文字列リテラルだけしか指定しなかった
+ * - 書式文字列で引用符が閉じられていなかった
+ * - 書式文字列で変換対象となるプロパティを持たないインスタンスを指定した
+ * - 未対応のロケールを指定した
  */
 export function format<F extends string>(
     target: TargetFor<F>,
     formatString: F,
-    options?: { locale?: string },
+    options?: FormatOptions,
     ..._: ValidateFormatString<F, 'format'>
 ): string;
 
@@ -157,10 +170,9 @@ export function format<F extends string>(
 export function format(
     target: FormatTarget,
     formatString: string,
-    options?: { locale?: string },
+    { locale = 'en-US' }: FormatOptions = {},
     ..._: unknown[]
 ): string {
-    const { locale = 'en-US' } = options ?? {};
     if (!isKeyOf(locale, LOCALES)) {
         error(`ロケール${locale}はサポートされていません`);
     }

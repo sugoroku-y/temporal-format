@@ -180,6 +180,7 @@ describe('format', () => {
         it('unsupported locale', () => {
             expect(() =>
                 format(Temporal.Now.zonedDateTimeISO(), 'E', {
+                    // @ts-expect-error サポート外のロケールを指定した場合の確認のためエラーになるロケールを指定
                     locale: 'unsupported-locale',
                 }),
             ).toThrow('ロケールunsupported-localeはサポートされていません');
