@@ -1,0 +1,35 @@
+{
+  "name": "temporal-format",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.m js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build && rollup -c",
+    "typecheck": "tsc -p tsconfig.test.json --noEmit --incremental false --composite false",
+    "test": "npm run typecheck && vitest run",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@microsoft/api-extractor": "^7.58.7",
+    "@types/node": "^25.9.1",
+    "@vitest/coverage-v8": "^4.1.7",
+    "eslint": "^10.4.0",
+    "prettier": "^3.8.3",
+    "rollup": "^4.62.0",
+    "rollup-plugin-dts": "^6.4.1",
+    "temporal-polyfill-lite": "^0.4.0",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.60.0",
+    "vite": "^8.0.12",
+    "vitest": "^4.1.7"
+  }
+}

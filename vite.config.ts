@@ -1,0 +1,17 @@
+import { resolve } from 'path';
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+    build: {
+        lib: {
+            entry: resolve(import.meta.dirname, 'src', 'index.ts'),
+            fileName: format => `index.${format === 'es' ? 'mjs' : 'cjs'}`,
+            formats: ['es', 'cjs'],
+        },
+    },
+    test: {
+        globals: true,
+        include: ['src/tests/*.test.ts'],
+        setupFiles: ['vitest-setup.js'],
+    },
+});
