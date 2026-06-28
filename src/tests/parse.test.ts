@@ -92,8 +92,8 @@ describe('parse', () => {
             second: 5,
         });
 
-        const fmt = 'E EEE EEEE a yyyy/MM/dd hh:mm';
-        const text = '木 木 木曜日 午後 2026/08/06 09:03';
+        const fmt = 'E EE EEE EEEE a yyyy/MM/dd hh:mm';
+        const text = '木 木 木 木曜日 午後 2026/08/06 09:03';
 
         expect(parse(text, fmt, reference, { locale: 'ja-JP' })).toEqual(
             Temporal.PlainDateTime.from({
@@ -211,7 +211,7 @@ describe('parse', () => {
         );
     });
 
-    it('parses 9-digit subsecond token (SSSS)', () => {
+    describe('parses subsecond token', () => {
         const reference = Temporal.PlainDateTime.from({
             year: 2026,
             month: 8,
@@ -221,17 +221,34 @@ describe('parse', () => {
             second: 5,
             millisecond: 0,
         });
-
-        expect(parse('05.123000000', 'ss.SSSS', reference)).toEqual(
-            Temporal.PlainDateTime.from({
-                year: 2026,
-                month: 8,
-                day: 6,
-                hour: 0,
-                minute: 0,
-                second: 5,
-                millisecond: 123,
-            }),
+        it.each([
+            [1, '1', 'S', 100, 0, 0],
+            [2, '12', 'SS', 120, 0, 0],
+            [3, '123', 'SSS', 123, 0, 0],
+            [4, '1234', 'SSSS', 123, 400, 0],
+            [5, '12345', 'SSSSS', 123, 450, 0],
+            [6, '123456', 'SSSSSS', 123, 456, 0],
+            [7, '1234567', 'SSSSSSS', 123, 456, 700],
+            [8, '12345678', 'SSSSSSSS', 123, 456, 780],
+            [9, '123456789', 'SSSSSSSSS', 123, 456, 789],
+        ] as const)(
+            '%d-digits %s with %s',
+            (
+                _digits,
+                input,
+                formatString,
+                millisecond,
+                microsecond,
+                nanosecond,
+            ) => {
+                expect(parse(input, formatString, reference)).toEqual(
+                    expect.objectContaining({
+                        millisecond,
+                        microsecond,
+                        nanosecond,
+                    }),
+                );
+            },
         );
     });
 
@@ -277,10 +294,10 @@ describe('parse', () => {
             day: 1,
         });
 
-        let f = "'hello'";
-        expect(() => parse('hello', f, reference)).toThrow(
-            "書式文字列がありません: 'hello'",
-        );
+        expect(() =>
+            // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
+            parse('hello', "'hello'", reference),
+        ).toThrow("書式文字列がありません: 'hello'");
     });
     it('unsupported locale', () => {
         const reference = Temporal.Now.zonedDateTimeISO();
@@ -289,7 +306,7 @@ describe('parse', () => {
                 // @ts-expect-error サポートしていないロケールを指定するとコンパイルエラーになる
                 locale: 'fr-FR',
             }),
-        ).toThrow('Unsupported locale: fr-FR');
+        ).toThrow('サポートしていないロケール: fr-FR');
     });
     it('parse failure', () => {
         const reference = Temporal.Now.zonedDateTimeISO();
@@ -380,7 +397,7 @@ describe('parse', () => {
             expect(parse('5', 'S', reference)?.millisecond).toBe(500);
             expect(parse('56', 'SS', reference)?.millisecond).toBe(560);
             expect(parse('567', 'SSS', reference)?.millisecond).toBe(567);
-            expect(parse('567890123', 'SSSS', reference)).toEqual(
+            expect(parse('567890123', 'SSSSSSSSS', reference)).toEqual(
                 expect.objectContaining({
                     millisecond: 567,
                     microsecond: 890,
@@ -398,24 +415,16 @@ describe('parse', () => {
             const reference = Temporal.Now.plainDateISO();
             const thisYear = reference.year;
             const year2digits = (thisYear + 50) % 100;
-            expect(
-                parse(
-                    padNumber(year2digits),
-                    'yy',
-                    reference,
-                )?.year,
-            ).toBe(Math.floor(thisYear / 100) * 100 + year2digits);
+            expect(parse(padNumber(year2digits), 'yy', reference)?.year).toBe(
+                Math.floor(thisYear / 100) * 100 + year2digits,
+            );
         });
         it('neighbouring century', () => {
             const reference = Temporal.Now.plainDateISO();
             const thisYear = reference.year;
             const year2digits = (thisYear + 51) % 100;
             expect(
-                parse(
-                    padNumber(year2digits),
-                    'yy',
-                    reference,
-                )?.year,
+                parse(padNumber(year2digits), 'yy', reference)?.year,
             ).not.toBe(Math.floor(thisYear / 100) * 100 + year2digits);
         });
         it('numeric date', () => {
@@ -447,17 +456,17 @@ describe('parse', () => {
         it('format string error for parse', () => {
             const reference = Temporal.Now.zonedDateTimeISO();
             expect(() =>
-                // @ts-expect-error
+                // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 parse('', 'E EEE EEEE X XX XXX x xx xxx', reference),
             ).toThrow(
                 '日付か時刻の書式文字列がありません: E EEE EEEE X XX XXX x xx xxx',
             );
             expect(() =>
-                // @ts-expect-error
+                // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 parse('', 'a', reference),
             ).toThrow('午前/午後(a)がある場合、12時間表記(h/hh)も必要です');
             expect(() =>
-                // @ts-expect-error
+                // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 parse('', 'h', reference),
             ).toThrow('12時間表記(h/hh)がある場合、午前/午後(a)も必要です');
         });
@@ -466,7 +475,9 @@ describe('parse', () => {
             expect(
                 Math.floor(
                     (parse(
-                        padNumber((Temporal.Now.plainDateISO().year + 50) % 100),
+                        padNumber(
+                            (Temporal.Now.plainDateISO().year + 50) % 100,
+                        ),
                         'yy',
                         reference,
                     )?.year ?? 0) / 100,

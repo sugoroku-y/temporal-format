@@ -27,19 +27,13 @@ describe('parseFormatString', () => {
 
   it('throws when a quoted literal is not terminated', () => {
     expect(() => parseFormatString("yyyy-'open")).toThrow(
-      "引用符が閉じられていません: yyyy-'open",
+      "引用符'が閉じられていません: yyyy-'open",
     );
   });
 
   it('throws when the format string contains no format tokens', () => {
     expect(() => parseFormatString('123 / -')).toThrow(
       '書式文字列がありません: 123 / -',
-    );
-  });
-
-  it('throws when a format token is longer than 4 characters', () => {
-    expect(() => parseFormatString('yyyyy')).toThrow(
-      '5文字以上の書式文字列はサポートされていません: yyyyy',
     );
   });
 });

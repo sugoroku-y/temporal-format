@@ -9,6 +9,8 @@ describe('format', () => {
         minute: 3,
         second: 5,
         millisecond: 123,
+        microsecond: 456,
+        nanosecond: 789,
     });
 
     it('formats basic date tokens', () => {
@@ -29,12 +31,12 @@ describe('format', () => {
 
     it('uses every supported token in one format string', () => {
         const allFormat =
-            "yyyy yy d dd H HH h hh a m mm s ss S SS SSS SSSS E EEE EEEE 'X' 'o''clock'";
+            "yyyy yy d dd H HH h hh a m mm s ss S SS SSS SSSS SSSSS SSSSSS SSSSSSS SSSSSSSS SSSSSSSSS E EE EEE EEEE 'X' 'o''clock'";
 
         const out = format(target, allFormat, { locale: 'en-US' });
 
         expect(out).toBe(
-            "2026 26 6 06 21 21 9 09 PM 3 03 5 05 1 12 123 123000000 Thu Thu Thursday X o'clock",
+            "2026 26 6 06 21 21 9 09 PM 3 03 5 05 1 12 123 1234 12345 123456 1234567 12345678 123456789 Thu Thu Thu Thursday X o'clock",
         );
     });
 
@@ -63,10 +65,10 @@ describe('format', () => {
     });
 
     it('throws when the format string contains no date-time tokens', () => {
-        let f = "'hello'";
-        expect(() => format(target, f)).toThrow(
-            "書式文字列がありません: 'hello'",
-        );
+        expect(() =>
+            // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
+            format('hello', "'hello'"),
+        ).toThrow("書式文字列がありません: 'hello'");
     });
 
     describe('12 hour', () => {
@@ -142,38 +144,43 @@ describe('format', () => {
     describe('others', () => {
         const d = Temporal.Now.plainDateISO();
 
-        it('Unknown monthCode', () => {
+        it('Unknown monthCode: numeric', () => {
             expect(
-                format({ monthCode: 'M13' } as Temporal.PlainDate, 'M'),
+                format({ monthCode: 'M13' }, 'M'),
+            ).toBe('13');
+        });
+        it('Unknown monthCode: short name', () => {
+            expect(
+                format({ monthCode: 'M13' }, 'MMM'),
             ).toBe('M13');
         });
         it('unclosed quotation', () => {
             expect(() =>
-                // @ts-expect-error
+                // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 format(d, "yyyy-'MM-dd"),
-            ).toThrow("引用符が閉じられていません: yyyy-'MM-dd");
+            ).toThrow("引用符'が閉じられていません: yyyy-'MM-dd");
         });
-        it('too long format string', () => {
+        it('alone quotation', () => {
             expect(() =>
-                // @ts-expect-error
-                format(d, 'yyyyy-MM-dd'),
-            ).toThrow('5文字以上の書式文字列はサポートされていません: yyyyy');
+                // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
+                format(d, "yyyy-'MM\"'-dd"),
+            ).toThrow("単独の引用符\"が使われています: yyyy-'MM\"'-dd");
         });
         it('unsupported format string', () => {
             expect(() =>
-                //@ts-expect-error
+                //@ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 format(d, 'yyy-MM-dd'),
             ).toThrow('無効な書式文字列です: yyy');
         });
         it('property not found', () => {
             expect(() =>
-                // @ts-expect-error
+                // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 format(d, 'HH:mm:ss.SSSS'),
-            ).toThrow('PlainDateにプロパティhourがありません: HH');
+            ).toThrow('PlainDateにはプロパティhourがありません: HH');
         });
         it('no format string', () => {
             expect(() => {
-                // @ts-expect-error
+                // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 format(d, "'yyyy-MM-dd'");
             }).toThrow("書式文字列がありません: 'yyyy-MM-dd'");
         });
@@ -183,7 +190,9 @@ describe('format', () => {
                     // @ts-expect-error サポート外のロケールを指定した場合の確認のためエラーになるロケールを指定
                     locale: 'unsupported-locale',
                 }),
-            ).toThrow('ロケールunsupported-localeはサポートされていません');
+            ).toThrow(
+                'サポートしていないロケール: unsupported-locale',
+            );
         });
         it('quoted literal', () => {
             const d = Temporal.PlainDate.from('2020-01-02');
@@ -196,11 +205,11 @@ describe('format', () => {
         });
         it('twice error', () => {
             expect(() =>
-                // @ts-expect-error
+                // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 format(d, 'yyy-MM-dd'),
             ).toThrow();
             expect(() =>
-                // @ts-expect-error
+                // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 format(d, 'yyy-MM-dd'),
             ).toThrow();
         });

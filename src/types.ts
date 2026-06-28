@@ -5,10 +5,10 @@ type UppercaseAlphabet = Split<'ABCDEFGHIJKLMNOPQRSTUVWXYZ'>;
 type LowercaseAlphabet = Lowercase<UppercaseAlphabet>;
 export type Alphabet = UppercaseAlphabet | LowercaseAlphabet;
 
-type Character4<C extends string> = C extends C
-    ? `${C}${C | ''}${C | ''}${C | ''}`
+type Character9<C extends string> = C extends C
+    ? `${C}${C | ''}${C | ''}${C | ''}${C | ''}${C | ''}${C | ''}${C | ''}${C | ''}`
     : never;
-export type Alphabet4 = Character4<Alphabet>;
+export type Alphabet9 = Character9<Alphabet>;
 
 export type AllPropertyNames<T> = T extends T
     ? keyof {
@@ -23,3 +23,7 @@ export type AllPropertyNames<T> = T extends T
 export type NumberProperties<T> = keyof {
     [K in keyof T as NonNullable<T[K]> extends number ? K : never]: 1;
 };
+
+export type NonNullish = Record<never, never>;
+
+export type FailoverIfNever<T, Fallback> = [T] extends [never] ? Fallback : T;

@@ -32,4 +32,11 @@ declare global {
         ): // TのUnion型の中で配列であるもの(参照専用かどうかに関わらず)だけを抽出
         o is Extract<T, readonly unknown[]>;
     }
+
+    interface Array<T> {
+        includes<U>(searchElement: U, fromIndex?: number, ..._: T extends U ? [] : never): boolean;
+    }
+
 }
+
+export {};

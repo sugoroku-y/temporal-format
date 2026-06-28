@@ -1,179 +1,262 @@
 import type { DateTimeProperties, PropertyMap } from './constants';
-import type { Alphabet } from './types';
+import type { Alphabet, FailoverIfNever, NonNullish } from './types';
 
-export type FormatToken<Unit extends string = string> = [Unit];
-export type LiteralToken<Literal extends string = string> = Literal;
-export interface ErrorToken<Message extends string = string> {
+/** 書式指定のノード */
+export type TokenNode<Token extends string = string> = [Token];
+/** リテラル文字列のノード */
+export type LiteralNode<Literal extends string = string> = Literal;
+
+/** 書式文字列を解析した結果(成功時) */
+type SuccessResult<
+    Node extends TokenNode | LiteralNode = TokenNode | LiteralNode,
+> = Node[];
+/** 解析結果(失敗時) */
+export interface FailureResult<Message extends string = string> {
     error: Message;
 }
-type Token = FormatToken | LiteralToken | ErrorToken;
-type ParseFormatStringContext = Token[];
+type ParseResult = SuccessResult | FailureResult;
 
-export type AddFormatToken<
-    Unit extends string,
-    Context extends ParseFormatStringContext,
-> = Context extends [
-    ...infer Pre,
-    FormatToken<infer LastUnit extends `${string}${Unit}`>,
-]
-    ? [...Pre, FormatToken<`${LastUnit}${Unit}`>]
-    : [...Context, FormatToken<Unit>];
-export type AddLiteralToken<
-    Literal extends string,
-    Context extends ParseFormatStringContext,
-> = Context extends [...infer Pre, LiteralToken<infer LastLiteral>]
-    ? [...Pre, LiteralToken<`${LastLiteral}${Literal}`>]
-    : [...Context, LiteralToken<Literal>];
-export type AddErrorToken<
-    Message extends string,
-    Context extends ParseFormatStringContext,
-> = [...Context, ErrorToken<Message>];
+export type AddToken<R extends SuccessResult, Token extends Alphabet> =
+    // 最後のNodeが同じ文字の書式指定子なら
+    R extends [...infer Pre, TokenNode<infer Last extends `${string}${Token}`>]
+        ? // 最後のNodeに1文字加える
+          [...Pre, TokenNode<`${Last}${Token}`>]
+        : // でなければ新しいNodeを追加
+          [...R, TokenNode<Token>];
+export type AddLiteral<R extends SuccessResult, Literal extends string> =
+    // 最後のNodeがリテラル文字列なら
+    R extends [...infer Pre, LiteralNode<infer Last>]
+        ? // 最後のリテラル文字列に追加
+          [...Pre, LiteralNode<`${Last}${Literal}`>]
+        : // でなければ新しいNodeを追加
+          [...R, LiteralNode<Literal>];
 
-export type ParseFormatString<
+/** 書式文字列を解析 */
+export type ParseFormatString<S extends string, R extends SuccessResult = []> =
+    // 先頭の1文字を抽出
+    S extends `${infer First}${infer Rest}`
+        ? // 先頭の1文字が引用符
+          First extends "'" | '"'
+            ? // その次も引用符
+              Rest extends `${First}${infer Rest2}`
+                ? // リテラル文字列として引用符1文字を追加して続行
+                  ParseFormatString<Rest2, AddLiteral<R, First>>
+                : // 引用符1文字だけならクォートしたリテラル文字列の始まり
+                  ParseQuotedLiteral<Rest, First, R>
+            : // 引用符以外は解析続行
+              ParseFormatString<
+                  Rest,
+                  // 先頭がアルファベット
+                  First extends Alphabet
+                      ? // 書式指定子として追加
+                        AddToken<R, First>
+                      : // 先頭がその他の文字ならリテラル文字列として追加
+                        AddLiteral<R, First>
+              >
+        : // もう文字がなければ現在の結果を返す
+          R;
+
+/** 書式文字列中の引用符内を解析 */
+type ParseQuotedLiteral<
     S extends string,
-    Context extends ParseFormatStringContext = [],
-> = S extends `''${infer Rest}`
-    ? ParseFormatString<Rest, AddLiteralToken<"'", Context>>
-    : S extends `'${infer Rest}`
-      ? ParseLiteral<Rest, Context>
-      : S extends `${infer Unit extends Alphabet}${infer Rest}`
-        ? ParseFormatString<Rest, AddFormatToken<Unit, Context>>
-        : S extends `${infer Literal}${infer Rest}`
-          ? ParseFormatString<Rest, AddLiteralToken<Literal, Context>>
-          : Context;
+    Q extends "'" | '"',
+    R extends SuccessResult,
+> =
+    // 先頭の1文字を抽出
+    S extends `${infer First}${infer Rest}`
+        ? // 先頭の1文字が引用符
+          First extends "'" | '"'
+            ? // 次の文字も引用符
+              Rest extends `${First}${infer Rest2}`
+                ? // リテラル文字列として引用符1文字を追加して続行
+                  ParseQuotedLiteral<Rest2, Q, AddLiteral<R, First>>
+                : // 開始した引用符と同じ引用符1文字だったなら
+                  First extends Q
+                  ? // リテラル文字列として引用符までの文字列を追加して書式指定子解析に戻る
+                    ParseFormatString<Rest, R>
+                  : // 開始したものとは違う引用符が単独出会った場合はエラー
+                    FailureResult<`単独の引用符${First}が使われています`>
+            : ParseQuotedLiteral<Rest, Q, AddLiteral<R, First>>
+        : // 引用符が見つからなければエラー
+          FailureResult<'引用符が閉じられていません'>;
 
-type ParseLiteral<
-    S extends string,
-    Context extends ParseFormatStringContext,
-> = S extends `${infer Literal}''${infer Rest}`
-    ? ParseLiteral<Rest, AddLiteralToken<`${Literal}'`, Context>>
-    : S extends `${infer Literal}'${infer Rest}`
-      ? ParseFormatString<Rest, AddLiteralToken<Literal, Context>>
-      : AddErrorToken<
-            `引用符が閉じられていません: ${Context extends [
-                ...Token[],
-                infer LastLiteral extends LiteralToken,
-            ]
-                ? LastLiteral
-                : ''}'${S}`,
-            Context
-        >;
+type ExtractToken<R extends ParseResult> =
+    R extends SuccessResult<infer Parsed extends TokenNode | LiteralNode>
+        ? FailoverIfNever<
+              Parsed extends TokenNode<infer Token> ? Token : never,
+              ['no-token']
+          >
+        : ['failure'];
 
-export interface ErrorResult<Message extends string> {
+/** 書式文字列の検証で問題がなかったとき */
+export type ValidationSuccess = [];
+/** 書式文字列の検証で問題があったとき */
+export type ValidationFailure<Message extends string> = [] & {
     message: Message;
-}
+};
 
-type ValidationForError<Context extends ParseFormatStringContext> =
-    // ErrorTokenを抽出してEに割当
-    Extract<Context[number], ErrorToken> extends infer E extends ErrorToken
-        ? [E] extends [never]
-            ? // Eがなければエラーなし
-              never
-            : // Eが存在したら、そのエラーを返す
-              E extends ErrorToken<infer Message>
-              ? // ContextにErrorTokenが含まれていれば、そのエラーを返す
-                Message
-              : // Messageへの割当のためのextendsなのでこちらには来ない
-                never
-        : // Eへの割当のためのextendsなのでここには来ない
+/**
+ * 書式文字列の解析に失敗した場合はそのエラーメッセージを返す型関数
+ *
+ * 成功していればundefinedを返す
+ *
+ * neverではなくundefinedなのはextendsで判定可能にするため
+ * @template R ParseFormatStringの返り値
+ */
+type ValidateParsingSuccessfull<R extends ParseResult> =
+    // 解析に失敗
+    R extends FailureResult<infer Message extends string>
+        ? // エラーメッセージを返す
+          Message
+        : // 成功していればundefinedを返す
           never;
-type ValidateUnit<Unit extends string> =
-    // UnitをUnion展開
-    Unit extends Unit
-        ? // Unitが5文字以上の場合
-          Unit extends `${infer _}${infer _}${infer _}${infer _}${infer _}${string}`
-            ? // エラーを返す
-              `5文字以上の書式文字列はサポートされていません: ${Unit}`
-            : // Unitが有効な書式文字列の場合
-              Unit extends keyof PropertyMap
-              ? // エラーなし
-                never
-              : // 無効な場合はエラーを返す
-                `無効な書式文字列です: ${Unit}`
-        : // UnitのUnion展開のためのextendsなのでこちらには来ない
+
+/**
+ * 書式文字列中に書式指定子がない場合はエラーメッセージを返す型関数
+ *
+ * ある場合はundefinedを返す
+ *
+ * ParseFailureがundefinedを返したあとに呼び出される
+ * @template R ParseFormatStringの返り値
+ *
+ * 定義としてはFailureResultとのUnion型になっているが、実際にはSuccessResultになっている
+ */
+type ValidateTokenExistence<R extends ParseResult> =
+    ExtractToken<R> extends ['no-token'] ? '書式指定子がありません' : never;
+
+/**
+ * 無効な書式指定子が指定されていればエラーメッセージを返す型関数
+ *
+ * 有効な書式指定子だけであればundefinedを返す
+ *
+ * ParseFailure、NoTokenがundefinedを返したあとに呼び出される
+ * @template R ParseFormatStringの返り値
+ *
+ * 定義としてはFailureResultとのUnion型になっているが、実際の型には以下の前提がある。
+ *
+ * - SuccessResultである
+ * - TokenNodeが含まれている
+ */
+type ValidateTokenSupported<R extends ParseResult> =
+    // 解析結果から書式指定子を抽出してTokenに割当
+    ExtractToken<R> extends infer Token extends string
+        ? // 無効な書式指定子を抽出してメッセージを生成して返す(Tokenがすべて有効ならneverになる)
+          `無効な書式指定子です: ${Exclude<Token, keyof PropertyMap>}`
+        : // 前提条件からここには来ない
           never;
-type ValidateUnitForParse<Unit extends string, Result> =
-    // 前段階の結果がエラーなしだった場合
-    [Result] extends [never]
-        ? // 各書式文字列で使用するプロパティに日付時刻のものが含まれていなかった場合
-          [
-              Extract<
-                  PropertyMap[Extract<Unit, keyof PropertyMap>],
-                  DateTimeProperties
-              >,
-          ] extends [never]
-            ? // parseでは日付か時刻の書式が必須
-              '日付か時刻の書式文字列がありません'
-            : // parseでは午前午後と12時間制表記を一緒に使う必要がある
-              {
-                  // どちらも使用していないならOK
-                  '': never;
-                  // どちらも使用しているでもOK
-                  AH: never;
-                  // 午前午後だけ使用している場合はエラー
-                  A: '午前/午後(a)がある場合、12時間表記(h/hh)も必要です';
-                  // 12時間表記だけ使用している場合もエラー
-                  H: '12時間表記(h/hh)がある場合、午前/午後(a)も必要です';
-              }[ // 午前午後と12時間制表記の組み合わせをチェック
-              `${[Extract<Unit, 'a'>] extends [never] ? '' : 'A'}${[Extract<Unit, 'h' | 'hh'>] extends [never] ? '' : 'H'}`]
-        : // 前段階でエラーがあればそのまま返す
-          Result;
 
-type ValidationErrorMessage<
-    Context extends ParseFormatStringContext,
-    Purpose extends 'format' | 'parse',
-    Result,
-> =
-    // 前段階で結果が出ていなければ続行
-    [Result] extends [never]
-        ? // FormatTokenを抽出してFに割当
-          Extract<Context[number], FormatToken> extends infer F extends
-              FormatToken
-            ? // Fがない場合
-              [F] extends [never]
-                ? // 書式文字列がないのでエラーを返す
-                  `書式文字列がありません`
-                : // Fが存在したら書式文字列をUnitに割当
-                  [F] extends [FormatToken<infer Unit extends string>]
-                  ? // 書式文字列のバリデーション
-                    {
-                        format: ValidateUnit<Unit>;
-                        parse: ValidateUnitForParse<Unit, ValidateUnit<Unit>>;
-                    }[Purpose]
-                  : // Unitへの割当のためのextendsなのでこちらには来ない
-                    never
-            : // Fへの割当のためのextendsなのでこちらには来ない
+/**
+ * 日付や時刻の書式指定子がなければエラーメッセージを返す型関数
+ *
+ * あればundefinedを返す
+ *
+ * ParseFailure、NoToken、UnsupportedTokenがundefinedを返したあとに呼び出される
+ * @template R ParseFormatStringの返り値
+ *
+ * いくつかの型関数が呼ばれundefinedを返したあとに呼ばれるため、実際の型には以下の前提がある。
+ *
+ * - SuccessResult
+ * - TokenNodeが含まれている
+ * - すべてのTokenNodeの書式指定子はPropertyMapのキーになっている
+ */
+type ValidateDateTimeTokenExistence<R extends ParseResult> =
+    // 解析結果から書式指定子を抽出してTokenに割当
+    ExtractToken<R> extends infer Token extends keyof PropertyMap
+        ? // 日付や時刻のプロパティだけを抽出し、それが空なら
+          [Extract<PropertyMap[Token][number], DateTimeProperties>] extends [never]
+            ? // エラーメッセージを返す
+              '日付や時刻の書式指定子がありません'
+            : // 日付や時刻のプロパティがあればundefined
               never
-        : // 結果が出ていればそのまま返す
-          Result;
-type ValidateFormatStringBase<
-    Context extends ParseFormatStringContext,
-    Purpose extends 'format' | 'parse',
-> = ValidationErrorMessage<Context, Purpose, ValidationForError<Context>>;
+        : // 前提条件からここには来ない
+          never;
 
-type ValidationResult<
-    S extends string,
-    Purpose extends 'format' | 'parse',
-> = S extends S // SをUnion展開
-    ? ValidateFormatStringBase<
-          // Sの解析結果をContextとして割当
-          ParseFormatString<S>,
-          Purpose
-      >
-    : // SをUnion展開するためのextendsなのでここには来ない
-      never;
+/**
+ * 午前午後の書式指定子と12時間制の時間の書式指定子がどちらか一方だけ指定されていればエラーメッセージを返す型関数
+ *
+ * どちらも指定されていない、もしくは両方指定されていればundefinedを返す
+ * @template R ParseFormatStringの返り値
+ *
+ * いくつかの型関数が呼ばれundefinedを返したあとに呼ばれるため、実際の型には以下の前提がある。
+ *
+ * - SuccessResult
+ * - TokenNodeが含まれている
+ * - すべてのTokenNodeの書式指定子はPropertyMapのキーになっている
+ */
+type ValidateDayPeriodAnd12Hours<R extends ParseResult> =
+    ExtractToken<R> extends infer Token extends keyof PropertyMap
+        ? {
+              // どちらも指定されていない
+              __: never;
+              // 両方指定されている
+              ah: never;
+              // 午前/午後だけ指定されている
+              a_: '午前/午後(a)がある場合、12時間表記(h/hh)も必要です';
+              // 12時間表記だけ指定されている
+              _h: '12時間表記(h/hh)がある場合、午前/午後(a)も必要です';
+          }[`${
+              // aが含まれていれば`'a'`、なければ`'_'`
+              [Extract<Token, 'a'>] extends [never] ? '_' : 'a'
+          }${
+              // h/hhが含まれていれば`'h'`、なければ`'_'`
+              [Extract<Token, 'h' | 'hh'>] extends [never] ? '_' : 'h'
+          }`]
+        : // 前提条件からここには来ない
+          never;
 
-export type ValidateFormatString<
-    S extends string,
-    Purpose extends 'format' | 'parse',
-> =
-    // Sがstringそのものの場合
-    string extends S
-        ? // 書式文字列の解析はできないのでエラーなしとする
-          []
-        : // SがstringでないならparseしてValidation
-          ValidationResult<S, Purpose> extends infer Message extends string
-          ? [Message] extends [never]
-              ? []
-              : [] & { message: `${Message}: ${S}` }
-          : never;
+/** 書式文字列の利用目的 */
+type Purpose = 'format' | 'parse';
+
+/**
+ * 書式文字列を解析して問題があればエラーメッセージを返す型関数
+ *
+ * 問題がなければundefinedを返す。
+ */
+type ValidationMessage<R extends ParseResult, P extends Purpose> =
+    // 書式文字列の解析に成功
+    | ValidateParsingSuccessfull<R>
+    // 書式指定子が存在する
+    | ValidateTokenExistence<R>
+    // 書式指定子が有効
+    | ValidateTokenSupported<R>
+    // formatの場合
+    | (P extends 'format'
+          ? // 検証はここまで
+            never
+          : // parseの場合
+            P extends 'parse'
+            ? // 日付や時刻の書式指定子を含む
+                  | ValidateDateTimeTokenExistence<R>
+                  // 午前午後と12時間制の時間は同時に使用
+                  | ValidateDayPeriodAnd12Hours<R>
+            : // formatでもparseでもない、ことはないのでここには来ない
+              never);
+
+/**
+ * 書式文字列を検証して失敗すればエラーメッセージ付きの空配列を返す型関数
+ *
+ * 成功すればただの空配列を返す。
+ *
+ * エラーメッセージ付きにすることで引数として指定できない状態になり、コンパイルエラーとなる。
+ *
+ * Sにstring型やテンプレートリテラル型を指定した場合は解析できないため検証成功とみなす。
+ */
+export type ValidateFormatString<S extends string, P extends Purpose> =
+    // SをUnion展開
+    S extends S
+        ? // Sが文字列リテラル型でなければ
+          NonNullish extends Record<S, never>
+            ? // 解析できないので検証成功とみなす
+              ValidationSuccess
+            : // 検証結果をMessageに割当
+              ValidationMessage<
+                    ParseFormatString<S>,
+                    P
+                > extends infer Message extends string
+              ? [Message] extends [never]
+                  ? // 文字列でなければ検証成功
+                    ValidationSuccess
+                  : // 検証結果が文字列だったら検証失敗、結果をエラーメッセージとする
+                    ValidationFailure<`${Message}: ${S}`>
+              : never
+        : never;

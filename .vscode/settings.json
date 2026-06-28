@@ -1,2 +1,22 @@
 {
+    "prettier.configPath": "./prettier.config.js",
+    "markdownlint.config": {
+        "ul-indent": {
+            "indent": 4
+        },
+        "no-inline-html": {
+            "allowed_elements": ["br"]
+        },
+        "no-empty-links": false,
+        "table-column-style": {
+            "aligned_delimiter": true,
+            "style": "aligned"
+        }
+    },
+    "js/ts.tsdk.path": "node_modules/typescript/lib",
+    "japanese-proofreading.textlint.丸かっこ（）": false,
+    "editor.detectIndentation": false,
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit"
+    }
 }

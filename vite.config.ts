@@ -13,5 +13,8 @@ export default defineConfig({
         globals: true,
         include: ['src/tests/*.test.ts'],
         setupFiles: ['vitest-setup.js'],
+        coverage: {
+            enabled: process.env.npm_config_coverage === 'true',
+        }
     },
 });
