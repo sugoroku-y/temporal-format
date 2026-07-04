@@ -411,25 +411,59 @@ describe('parse', () => {
             expect(parse('5', 'm', reference)?.minute).toBe(5);
             expect(parse('5', 's', reference)?.second).toBe(5);
         });
-        it('this century', () => {
-            const reference = Temporal.Now.plainDateISO();
-            const thisYear = reference.year;
-            const year2digits = (thisYear + 50) % 100;
-            expect(parse(padNumber(year2digits), 'yy', reference)?.year).toBe(
-                Math.floor(thisYear / 100) * 100 + year2digits,
-            );
-        });
-        it('neighbouring century', () => {
-            const reference = Temporal.Now.plainDateISO();
-            const thisYear = reference.year;
-            const year2digits = (thisYear + 51) % 100;
-            expect(
-                parse(padNumber(year2digits), 'yy', reference)?.year,
-            ).not.toBe(Math.floor(thisYear / 100) * 100 + year2digits);
-        });
-        it('numeric date', () => {
+        it.each([
+            [2025, '75', 1975],
+            [2025, '74', 2074],
+            [2075, '25', 2025],
+            [2075, '24', 2124],
+            [2050, '00', 2000],
+            [2050, '99', 2099],
+        ])(
+            '2-digit year: ref.year=%d, input=%s -> %d ',
+            (refYear, input, expected) => {
+                const reference = Temporal.Now.plainDateISO().with({
+                    year: refYear,
+                });
+                expect(parse(input, 'yy', reference)?.year).toBe(expected);
+            },
+        );
+        it('numeric month', () => {
             const reference = Temporal.PlainDate.from('2020-01-01');
             expect(parse('5', 'M', reference)?.month).toBe(5);
+        });
+        describe('invalid input', () => {
+            const reference = Temporal.Now.zonedDateTimeISO();
+            it.each([
+                'M',
+                'MM',
+                'd',
+                'dd',
+                'H',
+                'HH',
+                'h a',
+                'hh a',
+                'm',
+                'mm',
+                's',
+                'ss',
+                'S',
+                'SS',
+                'SSS',
+                'SSSS',
+                'SSSSS',
+                'SSSSSS',
+                'SSSSSSS',
+                'SSSSSSSS',
+                'SSSSSSSSS',
+                'X H',
+                'XX H',
+                'XXX H',
+                'x H',
+                'xx H',
+                'xxx H',
+            ])('invalid numeric format: %s', formatString => {
+                expect(parse('X', formatString, reference)).toBeUndefined();
+            });
         });
         it('rest string', () => {
             const reference = Temporal.PlainTime.from('00:00');

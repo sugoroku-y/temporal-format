@@ -1,27 +1,29 @@
-import type { PropertyMap } from './constants';
+import type { FormatTokenMap } from './constants';
 import type { FormatTarget } from './FormatTarget';
+import type {
+    ParseFormatString,
+    SuccessResult,
+    TokenNode,
+} from './parseFormatString';
 import type { NonNullish } from './types';
-import type { ParseFormatString, TokenNode } from './ValidateFormatString';
 
-/** @internal */
 type RequiredProperties<S extends string> =
     // SのUnion展開
     S extends S
         ? // 書式文字列の解析に成功していれば各ノードをParsedに割当
-          ParseFormatString<S> extends (infer Parsed)[]
-            ? // ノード中に書式指定子があればTokenに割当
-              Parsed extends TokenNode<infer Token extends keyof PropertyMap>
-                ? // 書式文字列があればプロパティ名に変換
-                  PropertyMap[Token][number]
-                : // 書式文字列がなければ絞り込まない
-                  never
+          ParseFormatString<S> extends SuccessResult<infer Parsed>
+            ? // ノード中の書式指定子に対応するプロパティ
+              FormatTokenMap[Extract<
+                  Extract<Parsed, TokenNode>[0],
+                  keyof FormatTokenMap
+              >]['p'][number]
             : // 解析失敗時には絞り込まない
               never
         : // SのUnion展開のためのextendsなのでここには来ない
           never;
-/** @internal */
-type TargetFor_Simple<
-    Properties extends PropertyMap[keyof PropertyMap][number],
+
+type TargetForSub<
+    Properties extends FormatTokenMap[keyof FormatTokenMap]['p'][number],
 > =
     // Propertiesが空の場合
     [Properties] extends [never]
@@ -29,16 +31,14 @@ type TargetFor_Simple<
           FormatTarget
         : // ZonedDateTimeが持つPropertiesと同じ名前のプロパティを持つオブジェクト型を返す
           Pick<Temporal.ZonedDateTime, Properties>;
-/** @internal */
-type ReferenceFor_Simple<
-    Properties extends PropertyMap[keyof PropertyMap][number],
-> = TargetFor_Simple<Properties> & {
+
+type ReferenceForSub<
+    Properties extends FormatTokenMap[keyof FormatTokenMap]['p'][number],
+> = TargetForSub<Properties> & {
     with(
-        like: TargetFor_Simple<
-            Exclude<Properties, 'dayOfWeek' | 'offsetNanoseconds'>
-        >,
+        like: TargetForSub<Exclude<Properties, 'dayOfWeek' | 'offset'>>,
     ): unknown;
-} & ('offsetNanoseconds' extends Properties
+} & ('offset' extends Properties
         ? Pick<Temporal.ZonedDateTime, 'withTimeZone'>
         : NonNullish);
 
@@ -52,7 +52,7 @@ export type TargetFor<S extends string> =
     NonNullish extends Record<S, never>
         ? // 解析できないのでFormatTargetを返す
           FormatTarget
-        : TargetFor_Simple<RequiredProperties<S>>;
+        : TargetForSub<RequiredProperties<S>>;
 
 /**
  * parseで指定された書式文字列に対してreferenceに指定できるインスタンスの型を生成する型関数
@@ -65,4 +65,4 @@ export type ReferenceFor<S extends string> =
     NonNullish extends Record<S, never>
         ? // 解析できないのでFormatTargetを返す
           FormatTarget
-        : ReferenceFor_Simple<RequiredProperties<S>>;
+        : ReferenceForSub<RequiredProperties<S>>;

@@ -1,9 +1,6 @@
 {
     "prettier.configPath": "./prettier.config.js",
     "markdownlint.config": {
-        "ul-indent": {
-            "indent": 4
-        },
         "no-inline-html": {
             "allowed_elements": ["br"]
         },
@@ -13,9 +10,14 @@
             "style": "aligned"
         }
     },
+    "editor.tabSize": 4,
+    "[markdown]": {
+        "editor.tabSize": 2
+    },
     "js/ts.tsdk.path": "node_modules/typescript/lib",
     "japanese-proofreading.textlint.丸かっこ（）": false,
     "editor.detectIndentation": false,
+    "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
         "source.organizeImports": "explicit"
     }

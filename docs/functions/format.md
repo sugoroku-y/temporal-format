@@ -1,6 +1,6 @@
 # 関数: format()
 
-> **format**\<`FormatString`\>(`target`, `formatString`, `options?`, ...`_`): `string`
+> **format**\<`F`\>(`target`, `formatString`, `options?`, ...`_`): `string`
 
 指定された書式文字列にしたがって、日付時刻を文字列に変換します。
 
@@ -8,9 +8,9 @@
 
 ## 型パラメーター
 
-### FormatString
+### F
 
-`FormatString` *extends* `string`
+`F` *extends* `string`
 
 書式文字列の型
 
@@ -18,7 +18,7 @@
 
 ### target
 
-`TargetFor`\<`FormatString`\>
+`TargetFor`\<`F`\>
 
 文字列に変換する日付時刻。
 
@@ -26,9 +26,9 @@
 
 ### formatString
 
-`FormatString`
+`F`
 
-文字列に変換するための[書式文字列](../variables/propertyMap.md)
+文字列に変換するための[書式文字列](../type-aliases/FormatString.md)
 
 ### options?
 
@@ -38,7 +38,7 @@
 
 ### \_
 
-...`ValidateFormatString`\<`FormatString`, `"format"`\>
+...`ValidateFormatString`\<`F`, `"format"`\>
 
 ## 戻り値
 
@@ -55,5 +55,5 @@
 - 書式文字列で単独の引用符を使用した
 - 書式文字列で無効な書式指定子を使用した
 - 書式文字列で変換対象となるプロパティを持たないインスタンスを指定した
--
+- カレンダーがISO8601ではないインスタンスを指定した
 - 未対応のロケールを指定した

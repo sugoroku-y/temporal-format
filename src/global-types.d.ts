@@ -34,9 +34,12 @@ declare global {
     }
 
     interface Array<T> {
-        includes<U>(searchElement: U, fromIndex?: number, ..._: T extends U ? [] : never): boolean;
+        includes<U>(
+            searchElement: U,
+            fromIndex?: number,
+            ..._: T extends U ? [] : never
+        ): boolean;
     }
-
 }
 
 export {};

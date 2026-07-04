@@ -10,28 +10,24 @@ export default {
     readme: 'none',
     entryFileName: 'index.md',
     headings: false,
-    intentionallyNotExported: [
-        'TargetFor',
-        'ValidateFormatString',
-        'LOCALES',
-        'FormatTarget',
-        'RequiredProperties',
-    ],
-    validation: {
-        invalidPath: false,
-    },
-    cleanOutputDir: false,
     hidePageHeader: true,
     hideBreadcrumbs: true,
+    intentionallyNotExported: [
+        'TargetFor',
+        'ReferenceFor',
+        'ValidateFormatString',
+        'LOCALES',
+    ],
     lang: 'ja',
     locales: {
         ja: {
-            kind_property: 'プロパティ',
+            // デフォルトの日本語訳ではテキスト校正くんでエラーになるので差し替え
             kind_plural_property: 'プロパティ',
             kind_plural_parameter: 'パラメーター',
+            // Throwsの訳語が用意されていなかったので追加
             tag_throws: '例外',
-            comment_for_0_links_to_1_not_included_in_docs_use_external_link_2:
-                '{0} に関するコメントには「{1}」へのリンクが含まれていますが、これは解決済みであるものの、ドキュメントには記載されていません。この警告を解消するには、それをエクスポートするか、{2} を externalSymbolLinkMappings オプションに追加してください。',
+            // 訳語のないメッセージ
+            output_0_generated_at_1: '{0}は{1}に出力されました。'
         },
     },
 };

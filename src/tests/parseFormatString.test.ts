@@ -3,25 +3,25 @@ import { parseFormatString } from '../parseFormatString';
 describe('parseFormatString', () => {
   it('parses a simple format string with tokens and literals', () => {
     expect(parseFormatString('yyyy-MM-dd')).toEqual([
-      ['yyyy'],
+      ['y', 4],
       '-',
-      ['MM'],
+      ['M', 2],
       '-',
-      ['dd'],
+      ['d', 2],
     ]);
   });
 
   it('parses format string with quoted literal text and escaped single quote', () => {
     expect(parseFormatString("yyyy'hello''world'HH")).toEqual([
-      ['yyyy'],
+      ['y', 4],
       "hello'world",
-      ['HH'],
+      ['H', 2],
     ]);
   });
 
   it('throws when an unknown format token is used', () => {
     expect(() => parseFormatString('yyyy-Q')).toThrow(
-      '無効な書式文字列です: Q',
+      '無効な書式指定子です: Q: yyyy-Q',
     );
   });
 

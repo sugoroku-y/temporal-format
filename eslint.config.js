@@ -6,17 +6,19 @@ import importX from 'eslint-plugin-import-x';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+import prettier from 'eslint-plugin-prettier';
 
 export default defineConfig([
     gitignore(),
     globalIgnores(['dist/', `docs/`], 'Outputs'),
     {
         files: ['**/*.{js,mjs,cjs,ts,mts,cts}'],
-        plugins: { js },
+        plugins: { js, prettier },
         extends: ['js/recommended'],
         languageOptions: { globals: globals.browser },
     },
     tseslint.configs.recommended,
+    tseslint.configs.strict,
     {
         plugins: {
             'es-x': esX,

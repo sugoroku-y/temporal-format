@@ -1,6 +1,6 @@
 # 関数: parse()
 
-> **parse**\<`F`, `T`\>(`input`, `formatString`, `reference`, `options?`, ...`_`): `T` \| `undefined`
+> **parse**\<`F`, `T`, `_T`\>(`input`, `formatString`, `reference`, `options?`, ...`_`): `T` \| `undefined`
 
 指定された書式文字列にしたがって、文字列を日付時刻に変換します。
 
@@ -20,9 +20,17 @@
 
 `F` *extends* `string`
 
+書式文字列の型
+
 ### T
 
-`T` *extends* `FormatTarget` \| `Pick`\<`ZonedDateTime`, `RequiredProperties`\<`F`\>\>
+`T`
+
+解析の基準となる日付時刻の型。返り値の型にもなります。
+
+### _T
+
+`_T` = `ReferenceFor`\<`F`\>
 
 ## パラメーター
 
@@ -36,7 +44,7 @@
 
 `F`
 
-文字列から変換するための[書式文字列](../_media/format-strings.md)
+文字列から変換するための[書式文字列](../type-aliases/FormatString.md)
 
 ### reference
 

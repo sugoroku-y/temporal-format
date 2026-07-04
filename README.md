@@ -6,4 +6,4 @@
 
 - [`format`](docs/functions/format.md)
 - [`parse`](docs/functions/parse.md)
-- [書式文字列](docs/variables/propertyMap.md)
+- [書式文字列](docs/type-aliases/FormatString.md)

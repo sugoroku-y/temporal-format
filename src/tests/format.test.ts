@@ -170,7 +170,7 @@ describe('format', () => {
             expect(() =>
                 //@ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 format(d, 'yyy-MM-dd'),
-            ).toThrow('無効な書式文字列です: yyy');
+            ).toThrow('無効な書式指定子です: yyy: yyy-MM-dd');
         });
         it('property not found', () => {
             expect(() =>

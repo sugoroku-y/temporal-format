@@ -27,3 +27,32 @@ export type NumberProperties<T> = keyof {
 export type NonNullish = Record<never, never>;
 
 export type FailoverIfNever<T, Fallback> = [T] extends [never] ? Fallback : T;
+
+type Counter<N extends number, R extends 1[] = []> = R['length'] extends N
+    ? R
+    : Counter<N, [1, ...R]>;
+export type Increment<N extends number> = Extract<
+    [...Counter<N>, 1]['length'],
+    number
+>;
+
+type RepeatSub<
+    S extends string,
+    N extends number,
+    R extends string,
+    C extends 1[],
+> = C['length'] extends N ? R : RepeatSub<S, N, `${R}${S}`, [1, ...C]>;
+export type Repeat<S extends string, N extends number> = S extends S
+    ? N extends N
+        ? RepeatSub<S, N, '', []>
+        : never
+    : never;
+
+export type EnableAccessingNonProperty<T, U = T> = T extends T
+    ? T &
+          Partial<
+              Readonly<
+                  Record<U extends U ? Exclude<keyof U, keyof T> : never, never>
+              >
+          >
+    : never;

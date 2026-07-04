@@ -17,6 +17,7 @@
   | `E`, `EE`, `EEE` | `Mon`〜`Sun`          |
   | `EEEE`           | `Monday`〜`Sunday`    |
   | `a`              | `AM`, `PM`            |
+
 - `ja-JP` 日本語
 
   以下の文字列が使用されます。

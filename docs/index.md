@@ -7,11 +7,8 @@
 
 ## 型エイリアス
 
+- [FormatString](type-aliases/FormatString.md)
 - [Locale](type-aliases/Locale.md)
-
-## 変数
-
-- [propertyMap](variables/propertyMap.md)
 
 ## 関数
 
