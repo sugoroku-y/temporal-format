@@ -177,14 +177,12 @@ function isStrictTokenNode(node: TokenNode): node is StrictTokenNode {
     );
 }
 
-/** @internal */
 export type ParsedFormatString = ReadonlyArray<LiteralNode | StrictTokenNode>;
 
 type Cache = { result: ParsedFormatString } | { result?: never; error: string };
 
 const cache = new Map<string, Cache>();
 
-/** @internal */
 export function parseFormatString(formatString: string): ParsedFormatString {
     const cached = cache.get(formatString);
     if (cached) {
