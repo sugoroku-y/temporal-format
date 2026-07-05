@@ -31,27 +31,74 @@ type ValidateParsingSuccessfull<R extends ParseResult> =
         : // 成功していればneverを返す
           never;
 
+declare const _test_ValidateParsingSuccessfull: [
+    ...It<
+        '1. ValidateParsingSuccessfull: 解析失敗したらエラーメッセージ',
+        Expect<
+            ValidateParsingSuccessfull<ParseFormatString<'yyyy"MMdd'>>,
+            ToEqual<'引用符"が閉じられていません'>
+        >
+    >,
+    ...It<
+        '2. ValidateParsingSuccessfull: 解析失敗したらエラーメッセージ',
+        Expect<
+            ValidateParsingSuccessfull<ParseFormatString<`'yyyy"MMdd'`>>,
+            ToEqual<'単独の引用符"が使われています'>
+        >
+    >,
+    ...It<
+        '3. ValidateParsingSuccessfull: 解析成功したらnever',
+        Expect<
+            ValidateParsingSuccessfull<ParseFormatString<`'yyyyMMdd'`>>,
+            ToEqual<never>
+        >
+    >,
+];
+
 /**
  * 書式文字列中に書式指定子がない場合はエラーメッセージを返す型関数
  *
  * ある場合はneverを返す
  * @template R ParseFormatStringの返り値
- *
- * 定義としてはFailureResultとのUnion型になっているが、実際にはSuccessResultになっている
  */
 type ValidateTokenExistence<R extends ParseResult> =
     ExtractToken<R> extends ['no-token'] ? '書式指定子がありません' : never;
 
+declare const _test_ValidateTokenExistence: [
+    ...It<
+        '1. ValidateTokenExistence: 書式指定子がない場合はエラー',
+        Expect<
+            ValidateTokenExistence<ParseFormatString<'"yyyyMMdd"'>>,
+            ToEqual<'書式指定子がありません'>
+        >
+    >,
+    ...It<
+        '2. ValidateTokenExistence: 書式指定子があればnever',
+        Expect<
+            ValidateTokenExistence<ParseFormatString<'yyyyMMdd'>>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '3. ValidateTokenExistence: 解析失敗してもここではnever',
+        Expect<
+            ValidateTokenExistence<ParseFormatString<'yyyy"MMdd'>>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '4. ValidateTokenExistence: 解析失敗してもここではnever',
+        Expect<
+            ValidateTokenExistence<ParseFormatString<`'yyyy"MMdd'`>>,
+            ToEqual<never>
+        >
+    >,
+];
 /**
  * 無効な書式指定子が指定されていればエラーメッセージを返す型関数
  *
  * 有効な書式指定子だけであればneverを返す
  * @template R ParseFormatStringの返り値
- *
- * 定義としてはFailureResultとのUnion型になっているが、実際の型には以下の前提がある。
- *
- * - SuccessResultである
- * - TokenNodeが含まれている
  */
 type ValidateTokenSupported<R extends ParseResult> =
     // 解析結果から書式指定子を抽出してTokenに割当
@@ -68,6 +115,51 @@ type ValidateTokenSupported<R extends ParseResult> =
               never
         : // 前提条件からここには来ない
           never;
+
+declare const _test_ValidateTokenSupported: [
+    ...It<
+        '1. ValidateTokenSupported: 無効な書式指定子が指定されていたらエラー',
+        Expect<
+            ValidateTokenSupported<ParseFormatString<'yyy-MM-dd'>>,
+            ToEqual<'無効な書式指定子です: yyy'>
+        >
+    >,
+    ...It<
+        '2. ValidateTokenSupported: 無効な書式指定子が複数指定されていてもエラー',
+        Expect<
+            ValidateTokenSupported<ParseFormatString<'yyy-MM-ddd'>>,
+            ToEqual<'無効な書式指定子です: yyy' | '無効な書式指定子です: ddd'>
+        >
+    >,
+    ...It<
+        '3. ValidateTokenSupported: 有効な書式指定子だけならnever',
+        Expect<
+            ValidateTokenSupported<ParseFormatString<'yyyy-MM-dd'>>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '4. ValidateTokenSupported: 解析失敗してもここではnever',
+        Expect<
+            ValidateTokenSupported<ParseFormatString<'yyyy"MMdd'>>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '5. ValidateTokenSupported: 解析失敗してもここではnever',
+        Expect<
+            ValidateTokenSupported<ParseFormatString<`'yyyy"MMdd'`>>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '6. ValidateTokenSupported: 書式指定子がなくてもここではnever',
+        Expect<
+            ValidateTokenSupported<ParseFormatString<'"yyyyMMdd"'>>,
+            ToEqual<never>
+        >
+    >,
+];
 
 /**
  * 日付や時刻の書式指定子がなければエラーメッセージを返す型関数
@@ -86,6 +178,55 @@ type ValidateDateTimeTokenExistence<R extends ParseResult> =
               never
         : // 前提条件からここには来ない
           never;
+
+declare const _test_ValidateDateTimeTokenExistence: [
+    ...It<
+        '1. ValidateDateTimeTokenExistence: 曜日やタイムゾーンだけだとエラー',
+        Expect<
+            ValidateDateTimeTokenExistence<
+                ParseFormatString<'E EE EEE EEEE X XX XXX x xx xxx'>
+            >,
+            ToEqual<'日付や時刻の書式指定子がありません'>
+        >
+    >,
+    ...It<
+        '2. ValidateDateTimeTokenExistence: 日付や時刻が混ざればnever',
+        Expect<
+            ValidateDateTimeTokenExistence<
+                ParseFormatString<'E EE EEE EEEE X XX XXX x xx xxx S'>
+            >,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '3. ValidateDateTimeTokenExistence: 無効な書式指定子が指定されていてもここではnever',
+        Expect<
+            ValidateDateTimeTokenExistence<ParseFormatString<'yyy-MM-dd'>>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '4. ValidateDateTimeTokenExistence: 解析失敗してもここではnever',
+        Expect<
+            ValidateDateTimeTokenExistence<ParseFormatString<'yyyy"MMdd'>>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '5. ValidateDateTimeTokenExistence: 解析失敗してもここではnever',
+        Expect<
+            ValidateDateTimeTokenExistence<ParseFormatString<`'yyyy"MMdd'`>>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '6. ValidateDateTimeTokenExistence: 書式指定子がなくてもここではnever',
+        Expect<
+            ValidateDateTimeTokenExistence<ParseFormatString<'"yyyyMMdd"'>>,
+            ToEqual<never>
+        >
+    >,
+];
 
 /**
  * 午前午後の書式指定子と12時間制の時間の書式指定子がどちらか一方だけ指定されていればエラーメッセージを返す型関数
@@ -114,6 +255,60 @@ type ValidateDayPeriodAnd12Hours<R extends ParseResult> =
         : // 前提条件からここには来ない
           never;
 
+declare const _test_ValidateDayPeriodAnd12Hours: [
+    ...It<
+        '1: ValidateDayPeriodAnd12Hours: 午前/午後だけ指定されていればエラー',
+        Expect<
+            ValidateDayPeriodAnd12Hours<ParseFormatString<'a HH:mm'>>,
+            ToEqual<'午前/午後(a)がある場合、12時間表記(h/hh)も必要です'>
+        >
+    >,
+    ...It<
+        '2: ValidateDayPeriodAnd12Hours: 12時間表記だけ指定されていればエラー',
+        Expect<
+            ValidateDayPeriodAnd12Hours<ParseFormatString<'hh:mm'>>,
+            ToEqual<'12時間表記(h/hh)がある場合、午前/午後(a)も必要です'>
+        >
+    >,
+    ...It<
+        '1. : 曜日やタイムゾーンだけでもここではnever',
+        Expect<
+            ValidateDayPeriodAnd12Hours<
+                ParseFormatString<'E EE EEE EEEE X XX XXX x xx xxx'>
+            >,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '3. : 無効な書式指定子が指定されていてもここではnever',
+        Expect<
+            ValidateDayPeriodAnd12Hours<ParseFormatString<'yyy-MM-dd'>>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '4. : 解析失敗してもここではnever',
+        Expect<
+            ValidateDayPeriodAnd12Hours<ParseFormatString<'yyyy"MMdd'>>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '5. : 解析失敗してもここではnever',
+        Expect<
+            ValidateDayPeriodAnd12Hours<ParseFormatString<`'yyyy"MMdd'`>>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '6. : 書式指定子がなくてもここではnever',
+        Expect<
+            ValidateDayPeriodAnd12Hours<ParseFormatString<'"yyyyMMdd"'>>,
+            ToEqual<never>
+        >
+    >,
+];
+
 /** 書式文字列の利用目的 */
 export type Purpose = 'format' | 'parse';
 
@@ -138,6 +333,107 @@ type ValidationMessage<R extends ParseResult, P extends Purpose> =
               // 午前午後と12時間制の時間は同時に使用
               | ValidateDayPeriodAnd12Hours<R>;
       }[P];
+
+declare const _test_ValidationMessage: [
+    ...It<
+        '1. ValidationMessage: format: 解析エラー: 引用符が閉じられていない',
+        Expect<
+            ValidationMessage<ParseFormatString<'"'>, 'format'>,
+            ToEqual<'引用符"が閉じられていません'>
+        >
+    >,
+    ...It<
+        '2. ValidationMessage: format: 解析エラー: 単独の引用符',
+        Expect<
+            ValidationMessage<ParseFormatString<`'"'`>, 'format'>,
+            ToEqual<'単独の引用符"が使われています'>
+        >
+    >,
+    ...It<
+        '3. ValidationMessage: format: 書式指定子がない',
+        Expect<
+            ValidationMessage<ParseFormatString<"'abc'">, 'format'>,
+            ToEqual<'書式指定子がありません'>
+        >
+    >,
+    ...It<
+        '4. ValidationMessage: format: 無効な書式指定子',
+        Expect<
+            ValidationMessage<ParseFormatString<'yyy-MM-ddd'>, 'format'>,
+            ToEqual<'無効な書式指定子です: yyy' | '無効な書式指定子です: ddd'>
+        >
+    >,
+    ...It<
+        '5. ValidationMessage: format: 日付と時刻の書式指定子がない(formatではエラーじゃない)',
+        Expect<
+            ValidationMessage<ParseFormatString<'E'>, 'format'>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '6. ValidationMessage: format: 午前午後だけ(formatではエラーじゃない)',
+        Expect<
+            ValidationMessage<ParseFormatString<'a'>, 'format'>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '7. ValidationMessage: format: 12時間制の時間だけ(formatではエラーじゃない)',
+        Expect<
+            ValidationMessage<ParseFormatString<'h'>, 'format'>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '8. ValidationMessage: parse: 解析エラー: 引用符が閉じられていない',
+        Expect<
+            ValidationMessage<ParseFormatString<'"'>, 'parse'>,
+            ToEqual<'引用符"が閉じられていません'>
+        >
+    >,
+    ...It<
+        '9. ValidationMessage: parse: 解析エラー: 単独の引用符',
+        Expect<
+            ValidationMessage<ParseFormatString<`'"'`>, 'parse'>,
+            ToEqual<'単独の引用符"が使われています'>
+        >
+    >,
+    ...It<
+        '10. ValidationMessage: parse: 書式指定子がない',
+        Expect<
+            ValidationMessage<ParseFormatString<"'abc'">, 'parse'>,
+            ToEqual<'書式指定子がありません'>
+        >
+    >,
+    ...It<
+        '11. ValidationMessage: parse: 無効な書式指定子',
+        Expect<
+            ValidationMessage<ParseFormatString<'yyy-MM-ddd'>, 'parse'>,
+            ToEqual<'無効な書式指定子です: yyy' | '無効な書式指定子です: ddd'>
+        >
+    >,
+    ...It<
+        '12. ValidationMessage: parse日付と時刻の書式指定子がない(parseではエラー)',
+        Expect<
+            ValidationMessage<ParseFormatString<'E'>, 'parse'>,
+            ToEqual<'日付や時刻の書式指定子がありません'>
+        >
+    >,
+    ...It<
+        '13. ValidationMessage: parse: 午前午後だけ(parseではエラー)',
+        Expect<
+            ValidationMessage<ParseFormatString<'a'>, 'parse'>,
+            ToEqual<'午前/午後(a)がある場合、12時間表記(h/hh)も必要です'>
+        >
+    >,
+    ...It<
+        '14. ValidationMessage: parse: 12時間制の時間だけ(parseではエラー)',
+        Expect<
+            ValidationMessage<ParseFormatString<'h'>, 'parse'>,
+            ToEqual<'12時間表記(h/hh)がある場合、午前/午後(a)も必要です'>
+        >
+    >,
+];
 
 /**
  * 書式文字列を検証して失敗すればエラーメッセージ付きの空配列を返す型関数
@@ -188,7 +484,7 @@ declare const _tests_ValidateFormatString: [
         Expect<
             ValidateFormatString<"yyyy-'MM-dd", 'format'>,
             ToEqual<
-                ValidationFailure<"引用符が閉じられていません: yyyy-'MM-dd">
+                ValidationFailure<"引用符'が閉じられていません: yyyy-'MM-dd">
             >
         >
     >,

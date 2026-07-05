@@ -116,7 +116,7 @@ type ParseQuotedLiteral<
                   ? ParseFormatString<Rest, R>
                   : FailureResult<`単独の引用符${First}が使われています`>
             : ParseQuotedLiteral<Rest, Q, AddLiteral<R, First>>
-        : FailureResult<'引用符が閉じられていません'>;
+        : FailureResult<`引用符${Q}が閉じられていません`>;
 
 declare const _tests_ParseFormatString: [
     ...It<
@@ -145,7 +145,7 @@ declare const _tests_ParseFormatString: [
         '3. ParseFormatString: 閉じらてていない引用符',
         Expect<
             ParseFormatString<"'closed' 'unclosed yyyy">,
-            ToEqual<FailureResult<'引用符が閉じられていません'>>
+            ToEqual<FailureResult<"引用符'が閉じられていません">>
         >
     >,
     ...It<
