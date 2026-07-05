@@ -730,7 +730,7 @@ declare const _tests_ValidateFormatString: [
         Expect<
             ValidateFormatString<"yyyy-'MM-dd", 'parse'>,
             ToEqual<
-                ValidationFailure<"引用符が閉じられていません: yyyy-'MM-dd">
+                ValidationFailure<"引用符'が閉じられていません: yyyy-'MM-dd">
             >
         >
     >,
