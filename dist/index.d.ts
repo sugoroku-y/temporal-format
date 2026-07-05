@@ -25,7 +25,7 @@ type AddLiteral<R extends SuccessResult, Literal extends string> = R extends [..
 /** 書式文字列を解析 */
 type ParseFormatString<S extends string, R extends SuccessResult = []> = S extends `${infer First}${infer Rest}` ? First extends "'" | '"' ? Rest extends `${First}${infer Rest2}` ? ParseFormatString<Rest2, AddLiteral<R, First>> : ParseQuotedLiteral<Rest, First, R> : ParseFormatString<Rest, First extends Alphabet ? AddToken<R, First> : AddLiteral<R, First>> : R;
 /** 書式文字列中の引用符内を解析 */
-type ParseQuotedLiteral<S extends string, Q extends "'" | '"', R extends SuccessResult> = S extends `${infer First}${infer Rest}` ? First extends "'" | '"' ? Rest extends `${First}${infer Rest2}` ? ParseQuotedLiteral<Rest2, Q, AddLiteral<R, First>> : First extends Q ? ParseFormatString<Rest, R> : FailureResult<`単独の引用符${First}が使われています`> : ParseQuotedLiteral<Rest, Q, AddLiteral<R, First>> : FailureResult<'引用符が閉じられていません'>;
+type ParseQuotedLiteral<S extends string, Q extends "'" | '"', R extends SuccessResult> = S extends `${infer First}${infer Rest}` ? First extends "'" | '"' ? Rest extends `${First}${infer Rest2}` ? ParseQuotedLiteral<Rest2, Q, AddLiteral<R, First>> : First extends Q ? ParseFormatString<Rest, R> : FailureResult<`単独の引用符${First}が使われています`> : ParseQuotedLiteral<Rest, Q, AddLiteral<R, First>> : FailureResult<`引用符${Q}が閉じられていません`>;
 type ExtractToken<R extends ParseResult> = R extends SuccessResult<infer Parsed extends TokenNode | LiteralNode> ? FailoverIfNever<Extract<Parsed, TokenNode>, ['no-token']> : ['failure'];
 type TokenNodeToString<Token extends TokenNode> = Token extends Token ? Repeat<Token[0], Token[1]> : never;
 declare const FORMAT_TOKEN_MAP: {
@@ -240,8 +240,6 @@ type ValidateParsingSuccessfull<R extends ParseResult> = R extends FailureResult
  *
  * ある場合はneverを返す
  * @template R ParseFormatStringの返り値
- *
- * 定義としてはFailureResultとのUnion型になっているが、実際にはSuccessResultになっている
  */
 type ValidateTokenExistence<R extends ParseResult> = ExtractToken<R> extends ['no-token'] ? '書式指定子がありません' : never;
 /**
@@ -249,11 +247,6 @@ type ValidateTokenExistence<R extends ParseResult> = ExtractToken<R> extends ['n
  *
  * 有効な書式指定子だけであればneverを返す
  * @template R ParseFormatStringの返り値
- *
- * 定義としてはFailureResultとのUnion型になっているが、実際の型には以下の前提がある。
- *
- * - SuccessResultである
- * - TokenNodeが含まれている
  */
 type ValidateTokenSupported<R extends ParseResult> = ExtractToken<R> extends infer Token extends TokenNode ? Token extends Token ? IsSupportedToken<Token> extends false ? `無効な書式指定子です: ${TokenNodeToString<Token>}` : never : never : never;
 /**
