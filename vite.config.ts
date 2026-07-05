@@ -7,6 +7,11 @@ export default defineConfig({
             fileName: format => `index.${format === 'es' ? 'mjs' : 'cjs'}`,
             formats: ['es', 'cjs'],
         },
+        rolldownOptions: {
+            experimental: {
+                attachDebugInfo: 'none',
+            },
+        },
     },
     test: {
         globals: true,
@@ -14,6 +19,6 @@ export default defineConfig({
         setupFiles: ['vitest-setup.js'],
         coverage: {
             enabled: process.env.npm_config_coverage === 'true',
-        }
+        },
     },
 });

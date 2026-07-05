@@ -1,15 +1,10 @@
-//#region src/error.ts
 function e(...t) {
 	let n = Array.isArray(t[0]) ? t[0].reduce((e, n, r) => `${e}${t[r]}${n}`) : t[0], r = Error(n);
 	throw Error.captureStackTrace(r, e), r;
 }
-//#endregion
-//#region src/asserts.ts
 function t(t, n) {
 	t || e(n ?? "Assertion failed");
 }
-//#endregion
-//#region src/constants.ts
 var n = {
 	y: {
 		l: [2, 4],
@@ -222,18 +217,12 @@ var n = {
 	x: 1,
 	X: 1
 };
-//#endregion
-//#region src/isKeyOf.ts
 function s(e, t) {
 	return e in t;
 }
-//#endregion
-//#region src/padNumber.ts
 function c(e, t = 2) {
 	return String(e).padStart(t, "0");
 }
-//#endregion
-//#region src/parseFormatString.ts
 function l(e) {
 	return s(e[0], n) && n[e[0]].l.includes(e[1]);
 }
@@ -263,8 +252,6 @@ function d(n) {
 		t(r instanceof Error), u.set(n, { error: r.message }), e(`${r.message}: ${n}`);
 	}
 }
-//#endregion
-//#region src/validateProperties.ts
 function f(e, r, i, c) {
 	let l = !1, u = !1, d = !1, f = !1;
 	for (let c of e) {
@@ -275,8 +262,6 @@ function f(e, r, i, c) {
 	}
 	c !== "format" && (t("with" in r && typeof r.with == "function", `${r.constructor.name}にはメソッドwithがありません`), f && t("withTimeZone" in r && typeof r.withTimeZone == "function", `${r.constructor.name}にはメソッドwithTimeZoneがありません`), t(l, `日付か時刻の書式文字列がありません: ${i}`), u ? t(d, `午前/午後(a)がある場合、12時間表記(h/hh)も必要です: ${i}`) : t(!d, `12時間表記(h/hh)がある場合、午前/午後(a)も必要です: ${i}`));
 }
-//#endregion
-//#region src/format.ts
 function p(e, t) {
 	return e.replace({
 		1: /\D0?/g,
@@ -343,8 +328,6 @@ function b(e, n, { locale: i = "en-US" } = {}) {
 	}
 	return c.join("");
 }
-//#endregion
-//#region src/parse.ts
 function x(e, t) {
 	return e.input.startsWith(t, e.index) ? (e.index += t.length, !0) : !1;
 }
@@ -508,5 +491,4 @@ function F(e, n, i, { locale: a = "en-US", overflow: o = "reject" } = {}) {
 	}
 	return l.offset !== void 0 && (u = u.withTimeZone(i)), u;
 }
-//#endregion
 export { b as format, F as parse };
