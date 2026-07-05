@@ -1,6 +1,4 @@
 {
-  "words": [
-    "ampm",
-    "Neighbouring"
-  ]
+    "allowCompoundWords": true,
+    "words": []
 }
