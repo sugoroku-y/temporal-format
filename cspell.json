@@ -1,4 +1,6 @@
 {
+    "useGitignore": true,
+    "ignorePaths": ["dist", "docs"],
     "allowCompoundWords": true,
     "words": []
 }
