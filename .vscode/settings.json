@@ -10,6 +10,7 @@
             "style": "aligned"
         }
     },
+    "japanese-proofreading.textlint.全角文字と半角文字の間": false,
     "editor.tabSize": 4,
     "[markdown]": {
         "editor.tabSize": 2
