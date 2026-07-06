@@ -1,9 +1,0 @@
-# Ignore everything by default
-*
-
-# Keep build output and publish metadata
-!dist/
-!docs/
-!package.json
-!README.md
-!LICENSE.md
