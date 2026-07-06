@@ -240,7 +240,11 @@ type ValidateDayPeriodAnd12Hours<R extends ParseResult> =
               // どちらも指定されていない
               __: never;
               // 両方指定されている
-              ah: never;
+              ah: [Extract<Token[0], 'H'>] extends [never]
+                  ? // 24時間表記がなければOK
+                    never
+                  : // あればエラー
+                    '12時間表記(h/hh)と24時間表記(H/HH)の両方を指定することはできません';
               // 午前/午後だけ指定されている
               a_: '午前/午後(a)がある場合、12時間表記(h/hh)も必要です';
               // 12時間表記だけ指定されている
@@ -268,6 +272,13 @@ declare const _test_ValidateDayPeriodAnd12Hours: [
         Expect<
             ValidateDayPeriodAnd12Hours<ParseFormatString<'hh:mm'>>,
             ToEqual<'12時間表記(h/hh)がある場合、午前/午後(a)も必要です'>
+        >
+    >,
+    ...It<
+        '2: ValidateDayPeriodAnd12Hours: 12時間表記と24時間表記が両方指定されていればエラー',
+        Expect<
+            ValidateDayPeriodAnd12Hours<ParseFormatString<'a HH:hh:mm'>>,
+            ToEqual<'12時間表記(h/hh)と24時間表記(H/HH)の両方を指定することはできません'>
         >
     >,
     ...It<

@@ -14,6 +14,7 @@ export function validateProperties(
     let hasDateTime = false;
     let hasDayPeriod = false;
     let has12hours = false;
+    let has24hours = false;
     let hasTimeZone = false;
     for (const node of nodes) {
         if (typeof node === 'string') {
@@ -29,6 +30,7 @@ export function validateProperties(
         hasDateTime ||= char in DATE_TIME_TOKEN;
         hasDayPeriod ||= char === 'a';
         has12hours ||= char === 'h';
+        has24hours ||= char === 'H';
         hasTimeZone ||= char in OFFSET_TOKEN;
     }
     if (purpose === 'format') {
@@ -52,6 +54,10 @@ export function validateProperties(
         assert(
             has12hours,
             `午前/午後(a)がある場合、12時間表記(h/hh)も必要です: ${formatString}`,
+        );
+        assert(
+            !has24hours,
+            '12時間表記(h/hh)と24時間表記(H/HH)の両方を指定することはできません',
         );
     } else {
         assert(

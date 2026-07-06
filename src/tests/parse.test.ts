@@ -503,6 +503,12 @@ describe('parse', () => {
                 // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 parse('', 'h', reference),
             ).toThrow('12時間表記(h/hh)がある場合、午前/午後(a)も必要です');
+            expect(() =>
+                // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
+                parse('', 'a h H', reference),
+            ).toThrow(
+                '12時間表記(h/hh)と24時間表記(H/HH)の両方を指定することはできません',
+            );
         });
         it.skip('half century', () => {
             const reference = Temporal.Now.zonedDateTimeISO();
