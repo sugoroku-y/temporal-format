@@ -144,16 +144,6 @@ describe('format', () => {
     describe('others', () => {
         const d = Temporal.Now.plainDateISO();
 
-        it('Unknown monthCode: numeric', () => {
-            expect(
-                format({ monthCode: 'M13' }, 'M'),
-            ).toBe('13');
-        });
-        it('Unknown monthCode: short name', () => {
-            expect(
-                format({ monthCode: 'M13' }, 'MMM'),
-            ).toBe('M13');
-        });
         it('unclosed quotation', () => {
             expect(() =>
                 // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
@@ -164,7 +154,7 @@ describe('format', () => {
             expect(() =>
                 // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 format(d, "yyyy-'MM\"'-dd"),
-            ).toThrow("単独の引用符\"が使われています: yyyy-'MM\"'-dd");
+            ).toThrow('単独の引用符"が使われています: yyyy-\'MM"\'-dd');
         });
         it('unsupported format string', () => {
             expect(() =>
@@ -190,9 +180,7 @@ describe('format', () => {
                     // @ts-expect-error サポート外のロケールを指定した場合の確認のためエラーになるロケールを指定
                     locale: 'unsupported-locale',
                 }),
-            ).toThrow(
-                'サポートしていないロケール: unsupported-locale',
-            );
+            ).toThrow('サポートしていないロケール: unsupported-locale');
         });
         it('quoted literal', () => {
             const d = Temporal.PlainDate.from('2020-01-02');

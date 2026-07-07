@@ -1,5 +1,5 @@
 import type { FormatTokenMap } from './constants';
-import type { Repeat } from './types';
+import type { Repeat, UnionToIntersection } from './types';
 
 /**
  * 書式文字列は同じアルファベットが1文字以上連続する書式指定子と、リテラル文字列で構成されます。
@@ -21,7 +21,7 @@ import type { Repeat } from './types';
  * - 引用符が閉じられていない
  * - 引用符を単独で使用する
  * - 書式指定子がない
- * - `propertMap`にない書式指定子を使用する
+ * - `FormatString`にない書式指定子を使用する
  * - `parse`で曜日(`E`など)やタイムゾーン(`X`など)だけを指定する
  * - `parse`で午前午後の書式指定子(`a`)を指定して、12時間制の時間の書式指定子(`h`もしくは`hh`)を指定しない
  * - `parse`で12時間制の時間の書式指定子(`h`もしくは`hh`)を指定して、午前午後の書式指定子(`a`)を指定しない
@@ -447,12 +447,13 @@ export const FormatString = {
      * | `-02:30`   | UTC-2時間30分 |
      */
     xxx: 'offset',
-} as const satisfies {
-    [K in FormatToken]: K extends `${infer Char extends keyof FormatTokenMap}${string}`
-        ? FormatTokenMap[Char]['p'][number]
-        : never;
-};
-
-type FormatToken = keyof {
-    [K in keyof FormatTokenMap as Repeat<K, FormatTokenMap[K]['l'][number]>]: 1;
-};
+} as const satisfies UnionToIntersection<
+    {
+        [Char in keyof FormatTokenMap]: Readonly<
+            Record<
+                Repeat<Char, FormatTokenMap[Char]['length'][number]>,
+                FormatTokenMap[Char]['properties'][number]
+            >
+        >;
+    }[keyof FormatTokenMap]
+>;

@@ -21,7 +21,7 @@ export function validateProperties(
             continue;
         }
         const [char, length] = node;
-        for (const property of FORMAT_TOKEN_MAP[char].p) {
+        for (const property of FORMAT_TOKEN_MAP[char].properties) {
             assert(
                 isKeyOf(property, instance),
                 `${instance.constructor.name}にはプロパティ${property}がありません: ${char.repeat(length)}: ${formatString}`,

@@ -3,8 +3,10 @@ import type { ReferenceFor } from './TargetFor';
 import type { ValidateFormatString } from './ValidateFormatString';
 import { assert } from './asserts';
 import {
+    FORMAT_TOKEN_MAP,
     LOCALES,
     ORDER_PROPERTIES,
+    type Char2Digit,
     type FormatTokenMap,
     type Locale,
     type WithValue,
@@ -15,7 +17,7 @@ import {
     parseFormatString,
     type ParsedFormatString,
 } from './parseFormatString';
-import type { NumberProperties } from './types';
+import type { UnionToIntersection } from './types';
 import { validateProperties } from './validateProperties';
 
 interface ParseContext {
@@ -70,17 +72,26 @@ function scanPattern(context: ParseContext, pattern: RegExp) {
     return match;
 }
 
-function parseWithArray(
+function parseWithTable(
     context: ParseContext,
     array: readonly string[],
-    label: string,
-): [index: number, name: string] {
-    for (const [index, name] of array.entries()) {
+): [index: number, value: string] | undefined;
+function parseWithTable(
+    context: ParseContext,
+    array: Readonly<Record<string, string>>,
+): [key: string, value: string] | undefined;
+function parseWithTable(
+    context: ParseContext,
+    array: readonly string[] | Readonly<Record<string, string>>,
+): [string | number, string] | undefined {
+    for (const [index, name] of Array.isArray(array)
+        ? array.entries()
+        : Object.entries(array)) {
         if (scanLiteral(context, name)) {
             return [index, name];
         }
     }
-    error(`${label} not found`);
+    return undefined;
 }
 
 function adjustYear(thisYear: number, year2digit: number): number {
@@ -90,15 +101,59 @@ function adjustYear(thisYear: number, year2digit: number): number {
     return year2digit + century * 100;
 }
 
-function parseYear(context: ParseContext, length: 2 | 4) {
+type ParseFunction<Char extends keyof FormatTokenMap> = UnionToIntersection<
+    Char extends Char
+        ? (
+              context: ParseContext,
+              token: [Char, FormatTokenMap[Char]['length'][number]],
+          ) => void
+        : never
+>;
+
+const PATTERNS = {
+    year: {
+        2: /\d{2}/gy,
+        4: /\d{4}/gy,
+    },
+    month: { 1: /1[0-2]?|[2-9]/gy, 2: /0[1-9]|1[0-2]/gy },
+    dayOfMonth: {
+        1: /([12]\d?|3[01]?|[4-9])/gy,
+        2: /0[1-9]|[12]\d|3[01]/gy,
+    },
+    hour24: { 1: /1\d?|2[0-3]?|[3-9]/gy, 2: /0\d|1\d|2[0-3]/gy },
+    hour12: {
+        1: /1[0-2]?|[2-9]/gy,
+        2: /0[1-9]|1[0-2]/gy,
+    },
+    minute: {
+        1: /0|[1-5]?\d|[6-9]/gy,
+        2: /[0-5]\d/gy,
+    },
+    second: {
+        1: /0|[1-5]?\d|[6-9]/gy,
+        2: /[0-5]\d/gy,
+    },
+    fractionSecond: {
+        1: /\d/gy,
+        2: /\d{1,2}/gy,
+        3: /\d{1,3}/gy,
+        4: /\d{1,4}/gy,
+        5: /\d{1,5}/gy,
+        6: /\d{1,6}/gy,
+        7: /\d{1,7}/gy,
+        8: /\d{1,8}/gy,
+        9: /\d{1,9}/gy,
+    },
+    offset: {
+        1: /[+-]\d{2}(?:\d{2})?/gy,
+        2: /[+-]\d{4}/gy,
+        3: /[+-]\d{2}:\d{2}/gy,
+    },
+} as const;
+
+const parseYear: ParseFunction<'y'> = (context, [, length]) => {
     const [yearString] =
-        scanPattern(
-            context,
-            {
-                2: /\d{2}/gy,
-                4: /\d{4}/gy,
-            }[length],
-        ) ?? error`Year not found`;
+        scanPattern(context, PATTERNS.year[length]) ?? error`Year not found`;
     const year = parseInt(yearString, 10);
     if (length === 4) {
         context.result.year = year;
@@ -106,161 +161,89 @@ function parseYear(context: ParseContext, length: 2 | 4) {
     }
     assert(context.referenceYear !== undefined);
     context.result.year = adjustYear(context.referenceYear, year);
-}
+};
 
-function parseMonth(context: ParseContext, length: 1 | 2 | 3 | 4) {
+const parseMonth: ParseFunction<'M'> = (context, [, length]) => {
     if (length === 1 || length === 2) {
         const [month] =
-            scanPattern(
-                context,
-                { 1: /1[0-2]?|[2-9]/gsy, 2: /0[1-9]|1[0-2]/gsy }[length],
-            ) ?? error`Month not found`;
+            scanPattern(context, PATTERNS.month[length]) ??
+            error`Month not found`;
         context.result.monthCode = `M${month.padStart(2, '0')}`;
         return;
     }
     const type = length === 3 ? 'short' : 'long';
     const names = LOCALES[context.locale].month[type];
-    for (const [monthCode, name] of Object.entries(names)) {
-        if (scanLiteral(context, name)) {
-            context.result.monthCode = monthCode;
-            return;
-        }
-    }
-    error(`Month not found for type ${type} in locale ${context.locale}`);
-}
+    const [monthCode] =
+        parseWithTable(context, names) ?? error`Month not found`;
+    context.result.monthCode = monthCode;
+};
 
-function parseNumber(
-    context: ParseContext,
-    re: RegExp,
-    property: NumberProperties<WithValue>,
-) {
+const timeUnitMapping = {
+    d: 'dayOfMonth',
+    H: 'hour24',
+    h: 'hour12',
+    m: 'minute',
+    s: 'second',
+} as const satisfies Record<Char2Digit, keyof typeof PATTERNS>;
+
+const parseNumber: ParseFunction<Char2Digit> = (context, [char, length]) => {
+    const re = PATTERNS[timeUnitMapping[char]][length];
+    const property = FORMAT_TOKEN_MAP[char]['properties'][0];
     const [num] = scanPattern(context, re) ?? error`${property} not found`;
     context.result[property] = parseInt(num, 10);
-}
+};
 
 function parseDayPeriod(context: ParseContext) {
-    const [index] = parseWithArray(
-        context,
-        LOCALES[context.locale].dayPeriod.amPm,
-        'day period',
-    );
+    const [index] =
+        parseWithTable(context, LOCALES[context.locale].dayPeriod.amPm) ??
+        error`Day period not found`;
     context.isPm = index === 1;
 }
 
-function parseFractionalSecond(
-    context: ParseContext,
-    length: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9,
-) {
+const parseFractionalSecond: ParseFunction<'S'> = (context, [, length]) => {
     const [match] =
-        scanPattern(
-            context,
-            {
-                1: /\d/gy,
-                2: /\d{1,2}/gy,
-                3: /\d{1,3}/gy,
-                4: /\d{1,4}/gy,
-                5: /\d{1,5}/gy,
-                6: /\d{1,6}/gy,
-                7: /\d{1,7}/gy,
-                8: /\d{1,8}/gy,
-                9: /\d{1,9}/gy,
-            }[length],
-        ) ?? error`Fractional second not found`;
+        scanPattern(context, PATTERNS.fractionSecond[length]) ??
+        error`Fractional second not found`;
     context.result.millisecond = parseInt(match.slice(0, 3).padEnd(3, '0'), 10);
     context.result.microsecond =
         match.length > 3 ? parseInt(match.slice(3, 6).padEnd(3, '0'), 10) : 0;
     context.result.nanosecond =
         match.length > 6 ? parseInt(match.slice(6, 9).padEnd(3, '0'), 10) : 0;
-}
+};
 
-function parseDayOfWeek(context: ParseContext, length: 1 | 2 | 3 | 4) {
+const parseDayOfWeek: ParseFunction<'E'> = (context, [, length]) => {
     const type = length === 4 ? 'long' : 'short';
-    parseWithArray(
-        context,
-        LOCALES[context.locale].dayOfWeek[type],
-        'Day of week',
-    );
+    if (!parseWithTable(context, LOCALES[context.locale].dayOfWeek[type])) {
+        void error`Day of week not found`;
+    }
     // 曜日は解析の結果には含めないので、context.resultは更新しない
-}
+};
 
-function parseTimeZone(
-    context: ParseContext,
-    length: 1 | 2 | 3,
-    allowZ: boolean,
-) {
-    if (allowZ && scanLiteral(context, 'Z')) {
-        context.offset = 'UTC';
+const parseTimeZone: ParseFunction<'X' | 'x'> = (context, [char, length]) => {
+    if (char === 'X' && scanLiteral(context, 'Z')) {
+        context.offset = '+00:00';
         return;
     }
     [context.offset] =
-        scanPattern(
-            context,
-            {
-                1: /[+-]\d{2}(?:\d{2})?/gy,
-                2: /[+-]\d{4}/gy,
-                3: /[+-]\d{2}:\d{2}/gy,
-            }[length],
-        ) ?? error`Time zone not found`;
-}
+        scanPattern(context, PATTERNS.offset[length]) ??
+        error`Time zone not found`;
+};
 
 const parseMap = {
-    y: (context, length) => parseYear(context, length),
-    M: (context, length) => parseMonth(context, length),
-    d: (context, length) =>
-        parseNumber(
-            context,
-            {
-                1: /([12]\d?|3[01]?|[4-9])/gy,
-                2: /0[1-9]|[12]\d|3[01]/gy,
-            }[length],
-            'day',
-        ),
-    H: (context, length) =>
-        parseNumber(
-            context,
-            {
-                1: /1\d?|2[0-3]?|[3-9]/gy,
-                2: /0\d|1\d|2[0-3]/gy,
-            }[length],
-            'hour',
-        ),
-    h: (context, length) =>
-        parseNumber(
-            context,
-            {
-                1: /1[0-2]?|[2-9]/gy,
-                2: /0[1-9]|1[0-2]/gy,
-            }[length],
-            'hour',
-        ),
-    a: context => parseDayPeriod(context),
-    m: (context, length) =>
-        parseNumber(
-            context,
-            {
-                1: /0|[1-5]?\d|[6-9]/gy,
-                2: /[0-5]\d/gy,
-            }[length],
-            'minute',
-        ),
-    s: (context, length) =>
-        parseNumber(
-            context,
-            {
-                1: /0|[1-5]?\d|[6-9]/gy,
-                2: /[0-5]\d/gy,
-            }[length],
-            'second',
-        ),
-    S: (context, length) => parseFractionalSecond(context, length),
-    E: (context, length) => parseDayOfWeek(context, length),
-    X: (context, length) => parseTimeZone(context, length, true),
-    x: (context, length) => parseTimeZone(context, length, false),
+    y: parseYear,
+    M: parseMonth,
+    d: parseNumber,
+    H: parseNumber,
+    h: parseNumber,
+    a: parseDayPeriod,
+    m: parseNumber,
+    s: parseNumber,
+    S: parseFractionalSecond,
+    E: parseDayOfWeek,
+    X: parseTimeZone,
+    x: parseTimeZone,
 } as const satisfies {
-    [Char in keyof FormatTokenMap]: (
-        context: ParseContext,
-        length: FormatTokenMap[Char]['l'][number],
-    ) => void;
+    [Char in keyof FormatTokenMap]: ParseFunction<Char>;
 };
 
 /**
@@ -313,8 +296,13 @@ function parseInput(
             continue;
         }
 
+        const [char] = node;
+        const parseFunc = parseMap[char] as (
+            c: typeof context,
+            t: typeof node,
+        ) => void;
         try {
-            parseMap[node[0]](context, node[1] as never);
+            parseFunc(context, node);
         } catch (ex) {
             console.log(ex);
             // 解析に失敗した場合はundefinedを返す

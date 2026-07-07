@@ -3,28 +3,34 @@ import type { TokenNode } from './parseFormatString';
 import type { AllPropertyNames, Alphabet } from './types';
 
 export const FORMAT_TOKEN_MAP = {
-    y: { l: [2, 4], p: ['year'] },
-    M: { l: [1, 2, 3, 4], p: ['monthCode'] },
-    d: { l: [1, 2], p: ['day'] },
-    E: { l: [1, 2, 3, 4], p: ['dayOfWeek'] },
-    a: { l: [1], p: ['hour'] },
-    H: { l: [1, 2], p: ['hour'] },
-    h: { l: [1, 2], p: ['hour'] },
-    m: { l: [1, 2], p: ['minute'] },
-    s: { l: [1, 2], p: ['second'] },
+    y: { length: [2, 4], properties: ['year'] },
+    M: { length: [1, 2, 3, 4], properties: ['monthCode'] },
+    d: { length: [1, 2], properties: ['day'] },
+    E: { length: [1, 2, 3, 4], properties: ['dayOfWeek'] },
+    a: { length: [1], properties: ['hour'] },
+    H: { length: [1, 2], properties: ['hour'] },
+    h: { length: [1, 2], properties: ['hour'] },
+    m: { length: [1, 2], properties: ['minute'] },
+    s: { length: [1, 2], properties: ['second'] },
     S: {
-        l: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-        p: ['millisecond', 'microsecond', 'nanosecond'],
+        length: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+        properties: ['millisecond', 'microsecond', 'nanosecond'],
     },
-    X: { l: [1, 2, 3], p: ['offset'] },
-    x: { l: [1, 2, 3], p: ['offset'] },
+    X: { length: [1, 2, 3], properties: ['offset'] },
+    x: { length: [1, 2, 3], properties: ['offset'] },
 } as const satisfies Partial<
-    Record<Alphabet, { l: number[]; p: AllPropertyNames<FormatTarget>[] }>
+    Record<
+        Alphabet,
+        { length: number[]; properties: AllPropertyNames<FormatTarget>[] }
+    >
 >;
 
 export type FormatTokenMap = typeof FORMAT_TOKEN_MAP;
 export type StrictTokenNode = {
-    [K in keyof FormatTokenMap]: TokenNode<K, FormatTokenMap[K]['l'][number]>;
+    [Char in keyof FormatTokenMap]: TokenNode<
+        Char,
+        FormatTokenMap[Char]['length'][number]
+    >;
 }[keyof FormatTokenMap];
 export type IsSupportedToken<Token extends TokenNode> =
     Token extends StrictTokenNode ? true : false;
@@ -203,8 +209,8 @@ export const DATE_TIME_TOKEN = {
     S: 1,
 } as const satisfies {
     // DateTimePropertiesがpに含まれる書式指定子を抽出
-    [K in keyof FormatTokenMap as FormatTokenMap[K]['p'][number] extends DateTimeProperties
-        ? K
+    [Char in keyof FormatTokenMap as FormatTokenMap[Char]['properties'][number] extends DateTimeProperties
+        ? Char
         : never]: 1;
 };
 export type DateTimeToken = keyof typeof DATE_TIME_TOKEN;
@@ -214,8 +220,17 @@ export const OFFSET_TOKEN = {
     X: 1,
 } as const satisfies {
     // offsetがpに含まれる書式指定子を抽出
-    [K in keyof FormatTokenMap as FormatTokenMap[K]['p'][number] extends 'offset'
-        ? K
+    [Char in keyof FormatTokenMap as FormatTokenMap[Char]['properties'][number] extends 'offset'
+        ? Char
         : never]: 1;
 };
 export type OffsetToken = keyof typeof OFFSET_TOKEN;
+
+export type Char2Digit = keyof {
+    [Char in keyof FormatTokenMap as FormatTokenMap[Char] extends {
+        length: [1, 2];
+        properties: [string];
+    }
+        ? Char
+        : never]: 1;
+};

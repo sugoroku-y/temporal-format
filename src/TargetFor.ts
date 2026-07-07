@@ -16,14 +16,15 @@ type RequiredProperties<S extends string> =
               FormatTokenMap[Extract<
                   Extract<Parsed, TokenNode>[0],
                   keyof FormatTokenMap
-              >]['p'][number]
+              >]['properties'][number]
             : // 解析失敗時には絞り込まない
               never
         : // SのUnion展開のためのextendsなのでここには来ない
           never;
 
 type TargetForSub<
-    Properties extends FormatTokenMap[keyof FormatTokenMap]['p'][number],
+    Properties extends
+        FormatTokenMap[keyof FormatTokenMap]['properties'][number],
 > =
     // Propertiesが空の場合
     [Properties] extends [never]
@@ -33,7 +34,8 @@ type TargetForSub<
           Pick<Temporal.ZonedDateTime, Properties>;
 
 type ReferenceForSub<
-    Properties extends FormatTokenMap[keyof FormatTokenMap]['p'][number],
+    Properties extends
+        FormatTokenMap[keyof FormatTokenMap]['properties'][number],
 > = TargetForSub<Properties> & {
     with(
         like: TargetForSub<Exclude<Properties, 'dayOfWeek' | 'offset'>>,

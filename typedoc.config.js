@@ -27,7 +27,7 @@ export default {
             // Throwsの訳語が用意されていなかったので追加
             tag_throws: '例外',
             // 訳語のないメッセージ
-            output_0_generated_at_1: '{0}は{1}に出力されました。'
+            output_0_generated_at_1: '{0}は{1}に出力されました。',
         },
     },
 };

@@ -167,13 +167,16 @@ export type TokenNodeToString<Token extends TokenNode> = Token extends Token
     : never;
 
 type StrictTokenNode = {
-    [K in keyof FormatTokenMap]: TokenNode<K, FormatTokenMap[K]['l'][number]>;
+    [K in keyof FormatTokenMap]: TokenNode<
+        K,
+        FormatTokenMap[K]['length'][number]
+    >;
 }[keyof FormatTokenMap];
 
 function isStrictTokenNode(node: TokenNode): node is StrictTokenNode {
     return (
         isKeyOf(node[0], FORMAT_TOKEN_MAP) &&
-        FORMAT_TOKEN_MAP[node[0]].l.includes(node[1])
+        FORMAT_TOKEN_MAP[node[0]].length.includes(node[1])
     );
 }
 

@@ -3,60 +3,92 @@ import type { TargetFor } from './TargetFor';
 import type { ValidateFormatString } from './ValidateFormatString';
 import { assert } from './asserts';
 import {
-    type DayOfWeekType,
+    type Char2Digit,
     FORMAT_TOKEN_MAP,
     type FormatTokenMap,
     type Locale,
     LOCALES,
-    type MonthType,
 } from './constants';
 import { isKeyOf } from './isKeyOf';
 import { padNumber } from './padNumber';
 import { parseFormatString } from './parseFormatString';
-import type { EnableAccessingNonProperty } from './types';
+import type { EnableAccessingNonProperty, UnionToIntersection } from './types';
 import { validateProperties } from './validateProperties';
 
-function formatMonthNumber(monthCode: string, length: 1 | 2): string {
-    return monthCode.replace({ 1: /\D0?/g, 2: /\D/g }[length], '');
-}
+type FormatFunction<Char extends keyof FormatTokenMap> = UnionToIntersection<
+    Char extends Char
+        ? (
+              target: Pick<
+                  Temporal.ZonedDateTime,
+                  FormatTokenMap[Char]['properties'][number]
+              >,
+              token: [Char, length: FormatTokenMap[Char]['length'][number]],
+              options: { locale: Locale },
+          ) => string
+        : never
+>;
 
-function formatMonthName(
-    monthCode: string,
-    locale: Locale,
-    monthType: MonthType,
-): string {
+const formatYear: FormatFunction<'y'> = ({ year }, [, length]) => {
+    if (length === 2) {
+        return padNumber(year % 100);
+    }
+    return String(year);
+};
+
+const formatMonth: FormatFunction<'M'> = (
+    { monthCode },
+    [, length],
+    { locale },
+): string => {
+    if (length === 1 || length === 2) {
+        const re = length === 1 ? /1[0-2]?|[2-9]/g : /0[1-9]|1[0-2]/g;
+        const month = re.exec(monthCode)?.[0];
+        assert(month);
+        return month;
+    }
+    const monthType = length === 3 ? 'short' : 'long';
     const table = LOCALES[locale].month[monthType];
-    return isKeyOf(monthCode, table) ? table[monthCode] : monthCode;
-}
+    assert(isKeyOf(monthCode, table));
+    return table[monthCode];
+};
 
-function formatDayOfWeek(
-    dayOfWeek: number,
-    locale: Locale,
-    dayOfWeekType: DayOfWeekType,
-): string {
-    return LOCALES[locale].dayOfWeek[dayOfWeekType][dayOfWeek - 1];
-}
+const formatNumberValue: FormatFunction<Char2Digit> = (d, [char, length]) => {
+    const property = FORMAT_TOKEN_MAP[char].properties[0];
+    let value = (d as Record<typeof property, number>)[property];
+    if (char === 'h') {
+        // 12時間表記のときだけは値に加工が必要
+        value = ((value + 11) % 12) + 1;
+    }
+    if (length === 1) {
+        return String(value);
+    }
+    return padNumber(value);
+};
 
-function formatFractionalSecond(
-    {
-        millisecond,
-        microsecond,
-        nanosecond,
-    }: { millisecond: number; microsecond: number; nanosecond: number },
-    length: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9,
-): string {
-    return `${padNumber(millisecond, 3)}${length > 3 ? padNumber(microsecond, 3) : ''}${length > 6 ? padNumber(nanosecond, 3) : ''}`.slice(
-        0,
-        length,
-    );
-}
+const formatDayOfWeek: FormatFunction<'E'> = (
+    { dayOfWeek },
+    [, length],
+    { locale },
+) => LOCALES[locale].dayOfWeek[length === 4 ? 'long' : 'short'][dayOfWeek - 1];
 
-function formatOffset(
-    offset: string,
-    length: 1 | 2 | 3,
-    allowZ?: true,
-): string {
-    if (allowZ && offset === '+00:00') {
+const formatDayPeriod: FormatFunction<'a'> = ({ hour }, _, { locale }) =>
+    LOCALES[locale].dayPeriod.amPm[Math.floor(hour / 12)];
+
+const formatFractionalSecond: FormatFunction<'S'> = (d, [, length]) => {
+    return `${padNumber(d.millisecond, 3)}${
+        // 3桁より大きいときだけmicrosecondを使う
+        length > 3 ? padNumber(d.microsecond, 3) : ''
+    }${
+        // 6桁より大きいときだけnanosecondを使う
+        length > 6 ? padNumber(d.nanosecond, 3) : ''
+    }`.slice(0, length);
+};
+
+const formatOffset: FormatFunction<'X' | 'x'> = (
+    { offset },
+    [char, length],
+) => {
+    if (char === 'X' && offset === '+00:00') {
         return 'Z';
     }
     return offset.replace(
@@ -67,49 +99,23 @@ function formatOffset(
         }[length],
         '',
     );
-}
-
-function formatNumberValue(value: number, length: 1 | 2) {
-    return {
-        1: (d: number) => String(d),
-        2: (d: number) => padNumber(d),
-    }[length](value);
-}
+};
 
 const formatMap = {
-    y: ({ year }, length) =>
-        ({
-            2: (y: number) => padNumber(y % 100),
-            4: (y: number) => String(y),
-        })[length](year),
-    M: ({ monthCode }, length, { locale }) =>
-        ({
-            1: (m: string) => formatMonthNumber(m, 1),
-            2: (m: string) => formatMonthNumber(m, 2),
-            3: (m: string, l: Locale) => formatMonthName(m, l, 'short'),
-            4: (m: string, l: Locale) => formatMonthName(m, l, 'long'),
-        })[length](monthCode, locale),
-    d: ({ day }, length) => formatNumberValue(day, length),
-    H: ({ hour }, length) => formatNumberValue(hour, length),
-    h: ({ hour }, length) => formatNumberValue(((hour + 11) % 12) + 1, length),
-    a: ({ hour }, _, { locale }) =>
-        LOCALES[locale].dayPeriod.amPm[Math.floor(hour / 12)],
-    m: ({ minute }, length) => formatNumberValue(minute, length),
-    s: ({ second }, length) => formatNumberValue(second, length),
-    S: (d, length) => formatFractionalSecond(d, length),
-    E: ({ dayOfWeek }, length, { locale }) =>
-        formatDayOfWeek(dayOfWeek, locale, length === 4 ? 'long' : 'short'),
-    X: ({ offset }, length) => formatOffset(offset, length, true),
-    x: ({ offset }, length) => formatOffset(offset, length),
+    y: formatYear,
+    M: formatMonth,
+    d: formatNumberValue,
+    E: formatDayOfWeek,
+    H: formatNumberValue,
+    h: formatNumberValue,
+    a: formatDayPeriod,
+    m: formatNumberValue,
+    s: formatNumberValue,
+    S: formatFractionalSecond,
+    X: formatOffset,
+    x: formatOffset,
 } as const satisfies {
-    [K in keyof typeof FORMAT_TOKEN_MAP]: (
-        target: Extract<
-            FormatTarget,
-            Record<FormatTokenMap[K]['p'][number], unknown>
-        >,
-        length: FormatTokenMap[K]['l'][number],
-        options: { locale: Locale },
-    ) => string;
+    [Char in keyof FormatTokenMap]: FormatFunction<Char>;
 };
 
 /**
@@ -168,13 +174,13 @@ export function format(
             result.push(node);
             continue;
         }
-        const [char, length] = node;
+        const [char] = node;
         const f = formatMap[char] as (
             t: typeof target,
-            l: typeof length,
+            n: typeof node,
             o: typeof options,
         ) => string;
-        result.push(f(target, length, options));
+        result.push(f(target, node, options));
     }
     return result.join('');
 }

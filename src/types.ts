@@ -48,11 +48,15 @@ export type Repeat<S extends string, N extends number> = S extends S
         : never
     : never;
 
-export type EnableAccessingNonProperty<T, U = T> = T extends T
-    ? T &
-          Partial<
-              Readonly<
-                  Record<U extends U ? Exclude<keyof U, keyof T> : never, never>
-              >
-          >
+export type EnableAccessingNonProperty<
+    T,
+    AllKeys extends PropertyKey = T extends T ? keyof T : never,
+> = T extends T
+    ? T & Partial<Readonly<Record<Exclude<AllKeys, keyof T>, never>>>
+    : never;
+
+export type UnionToIntersection<U> = (
+    U extends U ? (_: U) => 0 : never
+) extends (_: infer R) => 0
+    ? R
     : never;

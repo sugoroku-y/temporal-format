@@ -1,7 +1,7 @@
 {
-  "extends": "./tsconfig.lib.json",
-  "compilerOptions": {
-    "types": ["node", "vitest/globals"]
-  },
-  "exclude": []
+    "extends": "./tsconfig.lib.json",
+    "compilerOptions": {
+        "types": ["node", "vitest/globals"]
+    },
+    "exclude": []
 }

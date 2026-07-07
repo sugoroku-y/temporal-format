@@ -3,10 +3,10 @@ import js from '@eslint/js';
 import gitignore from 'eslint-config-flat-gitignore';
 import esX from 'eslint-plugin-es-x';
 import importX from 'eslint-plugin-import-x';
+import prettier from 'eslint-plugin-prettier';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
-import prettier from 'eslint-plugin-prettier';
 
 export default defineConfig([
     gitignore(),

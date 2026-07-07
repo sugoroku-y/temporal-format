@@ -277,16 +277,6 @@ describe('parse', () => {
         );
     });
 
-    it("returns undefined when input doesn't match the format", () => {
-        const reference = Temporal.PlainDate.from({
-            year: 2026,
-            month: 1,
-            day: 1,
-        });
-
-        expect(parse('not-a-date', 'yyyy-MM-dd', reference)).toBeUndefined();
-    });
-
     it('throws when the format string contains no date-time tokens', () => {
         const reference = Temporal.PlainDate.from({
             year: 2026,
@@ -308,13 +298,19 @@ describe('parse', () => {
             }),
         ).toThrow('サポートしていないロケール: fr-FR');
     });
-    it('parse failure', () => {
+    it('out of range', () => {
         const reference = Temporal.Now.zonedDateTimeISO();
-        expect(
-            parse('2020-11-31', 'yyyy-MM-dd', reference, {
-                overflow: 'reject',
-            }),
-        ).toBeUndefined();
+        const spy = vitest.spyOn(console, 'log').mockImplementation(() => {
+            // ログ出力抑止
+        });
+        try {
+            expect(
+                parse('2020-11-31', 'yyyy-MM-dd', reference),
+            ).toBeUndefined();
+            expect(spy).toHaveBeenCalledWith(expect.any(RangeError));
+        } finally {
+            spy.mockRestore();
+        }
     });
     describe('12 hour', () => {
         const time = Temporal.PlainTime.from('00:00');
@@ -434,14 +430,23 @@ describe('parse', () => {
         describe('invalid input', () => {
             const reference = Temporal.Now.zonedDateTimeISO();
             it.each([
+                'yy',
+                'yyyy',
                 'M',
                 'MM',
+                'MMM',
+                'MMMM',
                 'd',
                 'dd',
+                'E d',
+                'EE d',
+                'EEE d',
+                'EEEE d',
                 'H',
                 'HH',
                 'h a',
                 'hh a',
+                'a h',
                 'm',
                 'mm',
                 's',
@@ -461,8 +466,22 @@ describe('parse', () => {
                 'x H',
                 'xx H',
                 'xxx H',
-            ])('invalid numeric format: %s', formatString => {
-                expect(parse('X', formatString, reference)).toBeUndefined();
+            ])('invalid format: %s', formatString => {
+                const spy = vitest
+                    .spyOn(console, 'log')
+                    .mockImplementation(() => {
+                        // ログ出力抑止
+                    });
+                try {
+                    expect(parse('X', formatString, reference)).toBeUndefined();
+                    expect(spy).toHaveBeenCalledWith(
+                        expect.objectContaining({
+                            message: expect.stringMatching(/ not found/),
+                        }),
+                    );
+                } finally {
+                    spy.mockRestore();
+                }
             });
         });
         it('rest string', () => {
@@ -478,14 +497,6 @@ describe('parse', () => {
         it('year only', () => {
             const reference = Temporal.PlainDate.from('2020-01-01');
             expect(parse('2021', 'yyyy', reference)?.year).toBe(2021);
-        });
-        it('unknown month', () => {
-            const reference = Temporal.PlainDate.from('2020-01-01');
-            expect(parse('unknown', 'MMMM', reference)).toBeUndefined();
-        });
-        it('unknown day of week', () => {
-            const reference = Temporal.PlainDate.from('2020-01-01');
-            expect(parse('5 Zen', 'd E', reference)).toBeUndefined();
         });
         it('format string error for parse', () => {
             const reference = Temporal.Now.zonedDateTimeISO();
