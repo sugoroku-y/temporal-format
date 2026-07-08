@@ -26,11 +26,12 @@ export const FORMAT_TOKEN_MAP = {
 >;
 
 export type FormatTokenMap = typeof FORMAT_TOKEN_MAP;
-export type StrictTokenNode = {
-    [Char in keyof FormatTokenMap]: TokenNode<
-        Char,
-        FormatTokenMap[Char]['length'][number]
-    >;
+
+type StrictTokenNode = {
+    [Char in keyof FormatTokenMap]: {
+        [Length in FormatTokenMap[Char]['length'][number]]:
+            TokenNode<Char,Length>
+    }[FormatTokenMap[Char]['length'][number]];
 }[keyof FormatTokenMap];
 export type IsSupportedToken<Token extends TokenNode> =
     Token extends StrictTokenNode ? true : false;
@@ -166,11 +167,9 @@ export const LOCALES = {
  * 上記以外を指定するとエラーになります。
  */
 export type Locale = keyof typeof LOCALES;
-export type MonthType = keyof (typeof LOCALES)[Locale]['month'];
-export type DayOfWeekType = keyof (typeof LOCALES)[Locale]['dayOfWeek'];
 
 export type WithValue = Omit<
-    Extract<FormatTarget, { with(..._: never): unknown }>['with'] extends (
+    FormatTarget['with'] extends (
         _: infer R,
     ) => unknown
         ? R
