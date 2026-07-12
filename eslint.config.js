@@ -3,7 +3,7 @@ import js from '@eslint/js';
 import gitignore from 'eslint-config-flat-gitignore';
 import esX from 'eslint-plugin-es-x';
 import importX from 'eslint-plugin-import-x';
-import prettier from 'eslint-plugin-prettier';
+import prettier from 'eslint-plugin-prettier/recommended';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -11,12 +11,14 @@ import tseslint from 'typescript-eslint';
 export default defineConfig([
     gitignore(),
     globalIgnores(['dist/', `docs/`], 'Outputs'),
+    prettier,
     {
         files: ['**/*.{js,mjs,cjs,ts,mts,cts}'],
-        plugins: { js, prettier },
+        plugins: { js },
         extends: ['js/recommended'],
         languageOptions: { globals: globals.browser },
     },
+    tseslint.configs.eslintRecommended,
     tseslint.configs.recommended,
     tseslint.configs.strict,
     {

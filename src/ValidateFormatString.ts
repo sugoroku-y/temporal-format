@@ -339,7 +339,8 @@ type ValidationMessage<R extends ParseResult, P extends Purpose> =
           // formatの場合検証はここまで
           format: never;
           // parseの場合
-          parse: // 日付や時刻の書式指定子を含む
+          parse:
+              // 日付や時刻の書式指定子を含む
               | ValidateDateTimeTokenExistence<R>
               // 午前午後と12時間制の時間は同時に使用
               | ValidateDayPeriodAnd12Hours<R>;

@@ -1,4 +1,3 @@
-import { padNumber } from '../padNumber';
 import { parse } from '../parse';
 
 describe('parse', () => {
@@ -307,7 +306,9 @@ describe('parse', () => {
             expect(
                 parse('2020-11-31', 'yyyy-MM-dd', reference),
             ).toBeUndefined();
-            expect(spy).toHaveBeenCalledWith(expect.any(RangeError));
+            expect(spy).toHaveBeenCalledWith(
+                expect.stringContaining('RangeError: invalid date / time'),
+            );
         } finally {
             spy.mockRestore();
         }
@@ -475,9 +476,7 @@ describe('parse', () => {
                 try {
                     expect(parse('X', formatString, reference)).toBeUndefined();
                     expect(spy).toHaveBeenCalledWith(
-                        expect.objectContaining({
-                            message: expect.stringMatching(/ not found/),
-                        }),
+                        expect.stringContaining(' not found'),
                     );
                 } finally {
                     spy.mockRestore();
@@ -486,13 +485,37 @@ describe('parse', () => {
         });
         it('rest string', () => {
             const reference = Temporal.PlainTime.from('00:00');
-            expect(parse('12:34:56', 'HH:mm', reference)).toBeUndefined();
+            const spyLog = vitest
+                .spyOn(console, 'log')
+                .mockImplementation(() => {
+                    // ログ出力抑止
+                });
+            try {
+                expect(parse('12:34:56', 'HH:mm', reference)).toBeUndefined();
+                expect(console.log).toHaveBeenCalledWith(
+                    expect.stringContaining('余分な文字列があります: :56'),
+                );
+            } finally {
+                spyLog.mockRestore();
+            }
         });
         it('literal not match', () => {
             const reference = Temporal.PlainDate.from('2020-01-01');
-            expect(
-                parse('2020/02/02', 'yyyy-MM-dd', reference),
-            ).toBeUndefined();
+            const spyLog = vitest
+                .spyOn(console, 'log')
+                .mockImplementation(() => {
+                    // ログ出力を抑止
+                });
+            try {
+                expect(
+                    parse('2020/02/02', 'yyyy-MM-dd', reference),
+                ).toBeUndefined();
+                expect(console.log).toHaveBeenCalledWith(
+                    expect.stringContaining('一致しないリテラル文字列: -'),
+                );
+            } finally {
+                spyLog.mockRestore();
+            }
         });
         it('year only', () => {
             const reference = Temporal.PlainDate.from('2020-01-01');
@@ -520,20 +543,6 @@ describe('parse', () => {
             ).toThrow(
                 '12時間表記(h/hh)と24時間表記(H/HH)の両方を指定することはできません',
             );
-        });
-        it.skip('half century', () => {
-            const reference = Temporal.Now.zonedDateTimeISO();
-            expect(
-                Math.floor(
-                    (parse(
-                        padNumber(
-                            (Temporal.Now.plainDateISO().year + 50) % 100,
-                        ),
-                        'yy',
-                        reference,
-                    )?.year ?? 0) / 100,
-                ),
-            ).not.toBe(Math.floor(Temporal.Now.plainDateISO().year / 100));
         });
     });
 });

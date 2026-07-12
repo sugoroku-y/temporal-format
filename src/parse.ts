@@ -3,20 +3,21 @@ import type { ReferenceFor } from './TargetFor';
 import type { ValidateFormatString } from './ValidateFormatString';
 import { assert } from './asserts';
 import {
+    CHAR_2DIGIT,
+    CHAR_TO_PATTERN,
     FORMAT_TOKEN_MAP,
     LOCALES,
     ORDER_PROPERTIES,
-    type Char2Digit,
+    PATTERNS,
     type FormatTokenMap,
     type Locale,
+    type ParsedFormatString,
     type WithValue,
 } from './constants';
+import { entry as entryBase } from './entry';
 import { error } from './error';
 import { isKeyOf } from './isKeyOf';
-import {
-    parseFormatString,
-    type ParsedFormatString,
-} from './parseFormatString';
+import { parseFormatString } from './parseFormatString';
 import type { UnionToIntersection } from './types';
 import { validateProperties } from './validateProperties';
 
@@ -61,7 +62,7 @@ function scanLiteral(context: ParseContext, literal: string) {
 function scanPattern(context: ParseContext, pattern: RegExp) {
     assert(
         pattern.global && pattern.sticky,
-        `Pattern must have 'g' and 'y' flags: ${pattern}`,
+        `パターンにはgとyのフラグを指定してください: ${pattern}`,
     );
     pattern.lastIndex = context.index;
     const match = pattern.exec(context.input);
@@ -72,15 +73,15 @@ function scanPattern(context: ParseContext, pattern: RegExp) {
     return match;
 }
 
-function parseWithTable(
+function scanWithTable(
     context: ParseContext,
     array: readonly string[],
 ): [index: number, value: string] | undefined;
-function parseWithTable(
+function scanWithTable(
     context: ParseContext,
     array: Readonly<Record<string, string>>,
 ): [key: string, value: string] | undefined;
-function parseWithTable(
+function scanWithTable(
     context: ParseContext,
     array: readonly string[] | Readonly<Record<string, string>>,
 ): [string | number, string] | undefined {
@@ -110,138 +111,83 @@ type ParseFunction<Char extends keyof FormatTokenMap> = UnionToIntersection<
         : never
 >;
 
-const PATTERNS = {
-    year: {
-        2: /\d{2}/gy,
-        4: /\d{4}/gy,
-    },
-    month: { 1: /1[0-2]?|[2-9]/gy, 2: /0[1-9]|1[0-2]/gy },
-    dayOfMonth: {
-        1: /([12]\d?|3[01]?|[4-9])/gy,
-        2: /0[1-9]|[12]\d|3[01]/gy,
-    },
-    hour24: { 1: /1\d?|2[0-3]?|[3-9]/gy, 2: /0\d|1\d|2[0-3]/gy },
-    hour12: {
-        1: /1[0-2]?|[2-9]/gy,
-        2: /0[1-9]|1[0-2]/gy,
-    },
-    minute: {
-        1: /0|[1-5]?\d|[6-9]/gy,
-        2: /[0-5]\d/gy,
-    },
-    second: {
-        1: /0|[1-5]?\d|[6-9]/gy,
-        2: /[0-5]\d/gy,
-    },
-    fractionSecond: {
-        1: /\d/gy,
-        2: /\d{1,2}/gy,
-        3: /\d{1,3}/gy,
-        4: /\d{1,4}/gy,
-        5: /\d{1,5}/gy,
-        6: /\d{1,6}/gy,
-        7: /\d{1,7}/gy,
-        8: /\d{1,8}/gy,
-        9: /\d{1,9}/gy,
-    },
-    offset: {
-        1: /[+-]\d{2}(?:\d{2})?/gy,
-        2: /[+-]\d{4}/gy,
-        3: /[+-]\d{2}:\d{2}/gy,
-    },
-} as const;
-
-const parseYear: ParseFunction<'y'> = (context, [, length]) => {
-    const [yearString] =
-        scanPattern(context, PATTERNS.year[length]) ?? error`Year not found`;
-    const year = parseInt(yearString, 10);
-    if (length === 4) {
-        context.result.year = year;
-        return;
-    }
-    assert(context.referenceYear !== undefined);
-    context.result.year = adjustYear(context.referenceYear, year);
-};
-
-const parseMonth: ParseFunction<'M'> = (context, [, length]) => {
-    if (length === 1 || length === 2) {
-        const [month] =
-            scanPattern(context, PATTERNS.month[length]) ??
-            error`Month not found`;
-        context.result.monthCode = `M${month.padStart(2, '0')}`;
-        return;
-    }
-    const type = length === 3 ? 'short' : 'long';
-    const names = LOCALES[context.locale].month[type];
-    const [monthCode] =
-        parseWithTable(context, names) ?? error`Month not found`;
-    context.result.monthCode = monthCode;
-};
-
-const timeUnitMapping = {
-    d: 'dayOfMonth',
-    H: 'hour24',
-    h: 'hour12',
-    m: 'minute',
-    s: 'second',
-} as const satisfies Record<Char2Digit, keyof typeof PATTERNS>;
-
-const parseNumber: ParseFunction<Char2Digit> = (context, [char, length]) => {
-    const re = PATTERNS[timeUnitMapping[char]][length];
-    const property = FORMAT_TOKEN_MAP[char]['properties'][0];
-    const [num] = scanPattern(context, re) ?? error`${property} not found`;
-    context.result[property] = parseInt(num, 10);
-};
-
-function parseDayPeriod(context: ParseContext) {
-    const [index] =
-        parseWithTable(context, LOCALES[context.locale].dayPeriod.amPm) ??
-        error`Day period not found`;
-    context.isPm = index === 1;
-}
-
-const parseFractionalSecond: ParseFunction<'S'> = (context, [, length]) => {
-    const [match] =
-        scanPattern(context, PATTERNS.fractionSecond[length]) ??
-        error`Fractional second not found`;
-    context.result.millisecond = parseInt(match.slice(0, 3).padEnd(3, '0'), 10);
-    context.result.microsecond =
-        match.length > 3 ? parseInt(match.slice(3, 6).padEnd(3, '0'), 10) : 0;
-    context.result.nanosecond =
-        match.length > 6 ? parseInt(match.slice(6, 9).padEnd(3, '0'), 10) : 0;
-};
-
-const parseDayOfWeek: ParseFunction<'E'> = (context, [, length]) => {
-    const type = length === 4 ? 'long' : 'short';
-    if (!parseWithTable(context, LOCALES[context.locale].dayOfWeek[type])) {
-        void error`Day of week not found`;
-    }
-    // 曜日は解析の結果には含めないので、context.resultは更新しない
-};
-
-const parseTimeZone: ParseFunction<'X' | 'x'> = (context, [char, length]) => {
-    if (char === 'X' && scanLiteral(context, 'Z')) {
-        context.offset = '+00:00';
-        return;
-    }
-    [context.offset] =
-        scanPattern(context, PATTERNS.offset[length]) ??
-        error`Time zone not found`;
-};
+const entry: <Char extends keyof FormatTokenMap>(
+    chars: Char | Char[],
+    func: ParseFunction<Char>,
+) => Record<Char, ParseFunction<Char>> = entryBase;
 
 const parseMap = {
-    y: parseYear,
-    M: parseMonth,
-    d: parseNumber,
-    H: parseNumber,
-    h: parseNumber,
-    a: parseDayPeriod,
-    m: parseNumber,
-    s: parseNumber,
-    S: parseFractionalSecond,
-    E: parseDayOfWeek,
-    X: parseTimeZone,
-    x: parseTimeZone,
+    ...entry('y', (context, [, length]) => {
+        const [yearString] =
+            scanPattern(context, PATTERNS.year[length]) ??
+            error`Year not found`;
+        const year = parseInt(yearString, 10);
+        if (length === 4) {
+            context.result.year = year;
+            return;
+        }
+        assert(context.referenceYear !== undefined);
+        context.result.year = adjustYear(context.referenceYear, year);
+    }),
+    ...entry('M', (context, [, length]) => {
+        if (length === 1 || length === 2) {
+            const [month] =
+                scanPattern(context, PATTERNS.month[length]) ??
+                error`Month not found`;
+            context.result.monthCode = `M${month.padStart(2, '0')}`;
+            return;
+        }
+        const type = length === 3 ? 'short' : 'long';
+        const names = LOCALES[context.locale].month[type];
+        const [monthCode] =
+            scanWithTable(context, names) ?? error`Month not found`;
+        context.result.monthCode = monthCode;
+    }),
+    ...entry(CHAR_2DIGIT, (context, [char, length]) => {
+        const re = PATTERNS[CHAR_TO_PATTERN[char]][length];
+        const property = FORMAT_TOKEN_MAP[char]['properties'][0];
+        const [num] = scanPattern(context, re) ?? error`${property} not found`;
+        context.result[property] = parseInt(num, 10);
+    }),
+    ...entry('a', context => {
+        const [index] =
+            scanWithTable(context, LOCALES[context.locale].dayPeriod.amPm) ??
+            error`Day period not found`;
+        context.isPm = index === 1;
+    }),
+    ...entry('S', (context, [, length]) => {
+        const [match] =
+            scanPattern(context, PATTERNS.fractionSecond[length]) ??
+            error`Fractional second not found`;
+        context.result.millisecond = parseInt(
+            match.slice(0, 3).padEnd(3, '0'),
+            10,
+        );
+        context.result.microsecond =
+            match.length > 3
+                ? parseInt(match.slice(3, 6).padEnd(3, '0'), 10)
+                : 0;
+        context.result.nanosecond =
+            match.length > 6
+                ? parseInt(match.slice(6, 9).padEnd(3, '0'), 10)
+                : 0;
+    }),
+    ...entry('E', (context, [, length]) => {
+        const type = length === 4 ? 'long' : 'short';
+        if (!scanWithTable(context, LOCALES[context.locale].dayOfWeek[type])) {
+            void error`Day of week not found`;
+        }
+        // 曜日は解析の結果には含めないので、context.resultは更新しない
+    }),
+    ...entry(['X', 'x'], (context, [char, length]) => {
+        if (char === 'X' && scanLiteral(context, 'Z')) {
+            context.offset = '+00:00';
+            return;
+        }
+        [context.offset] =
+            scanPattern(context, PATTERNS.offset[length]) ??
+            error`Time zone not found`;
+    }),
 } as const satisfies {
     [Char in keyof FormatTokenMap]: ParseFunction<Char>;
 };
@@ -267,32 +213,19 @@ function initializeSubordinateProperties({ result }: ParseContext) {
             result.monthCode = 'M01';
             continue;
         }
-        // 日は初期値が1、それ以外は0(yearより上位のプロパティはないのでここにはyearは来ない)
+        // 日は初期値が1、それ以外は0(yearより上位のプロパティはないのでyearは考慮しなくて良い)
         result[name] = name === 'day' ? 1 : 0;
     }
 }
 
-function parseInput(
-    nodes: ParsedFormatString,
-    input: string,
-    locale: Locale,
-    referenceYear?: number,
-): ParseContext | undefined {
-    const context: ParseContext = {
-        input,
-        index: 0,
-        locale,
-        result: {},
-        referenceYear,
-    };
-
+function parseInput(context: ParseContext, nodes: ParsedFormatString) {
     for (const node of nodes) {
         if (typeof node === 'string') {
             // リテラル文字列は文字列が一致するかどうかだけ
-            if (!scanLiteral(context, node)) {
-                // 文字列が一致しない場合はundefinedを返す
-                return undefined;
-            }
+            assert(
+                scanLiteral(context, node),
+                `一致しないリテラル文字列: ${node}`,
+            );
             continue;
         }
 
@@ -301,21 +234,18 @@ function parseInput(
             c: typeof context,
             t: typeof node,
         ) => void;
-        try {
-            parseFunc(context, node);
-        } catch (ex) {
-            console.log(ex);
-            // 解析に失敗した場合はundefinedを返す
-            return undefined;
-        }
+        parseFunc(context, node);
     }
-    if (context.index !== input.length) {
-        // 解析で残った部分がある場合はundefinedを返す
-        return undefined;
-    }
+    assert(
+        context.index === context.input.length,
+        `余分な文字列があります: ${context.input.slice(context.index)}`,
+    );
 
     if (context.isPm !== undefined) {
-        assert(context.result.hour !== undefined);
+        assert(
+            context.result.hour !== undefined,
+            '午前午後が指定されていれば時間の指定は必須',
+        );
         // 13以上にはならないはず
         if (context.result.hour === 12) {
             if (!context.isPm) {
@@ -332,7 +262,6 @@ function parseInput(
     }
     // 指定されたプロパティよりも下位のプロパティをリセット
     initializeSubordinateProperties(context);
-    return context;
 }
 
 type EnableNonExistPropertyAccessing<
@@ -367,12 +296,14 @@ type EnableNonExistPropertyAccessing<
  * 入力文字列から解析された日付や時刻の値がそのタイムゾーンで解釈され
  * referenceと同じタイムゾーンに変換したものを返します。
  * @throws 以下の場合に例外が投げられます
+ *
  * - 書式文字列に文字列リテラルだけしか指定しなかった
  * - 書式文字列で引用符が閉じられていなかった
  * - 書式文字列で変換対象となるプロパティを持たないインスタンスを指定した
  * - 書式文字列に日時や時刻に変換されるがアルファベットが指定されていない
  * - 書式文字列に`a`(午前・午後)が指定されているのに`h`や`hh`(12時間制の時)が指定されていない
  * - 書式文字列に`h`もしくは`hh`(12時間制の時)が指定されているのに`a`(午前・午後)が指定されていない
+ * - 書式文字列に`h`もしくは`hh`(12時間制の時)と`H`もしくは`HH`(24時間制の時)が同時に指定されている
  * - 未対応のロケールを指定した
  * - 未対応のoverflow
  * @see {@link format}
@@ -406,25 +337,36 @@ export function parse(
     const nodes = parseFormatString(formatString);
     validateProperties(nodes, reference, formatString, 'parse');
 
-    const context = parseInput(nodes, input, locale, reference.year);
-    if (!context) {
-        return undefined;
-    }
-    let result = reference;
-    // タイムゾーンの指定があればそのタイムゾーンに変更してから日付時刻を設定する
-    if (context.offset !== undefined) {
-        result = result.withTimeZone(context.offset);
-    }
+    const context: ParseContext = {
+        input,
+        index: 0,
+        locale,
+        result: {},
+        referenceYear: reference.year,
+    };
     try {
-        result = result.with(context.result, { overflow });
+        parseInput(context, nodes);
+        if (context.offset !== undefined) {
+            // タイムゾーンの指定があれば
+            return (
+                reference
+                    // そのタイムゾーンに変更してから
+                    .withTimeZone?.(context.offset)
+                    // 日付時刻を設定し
+                    .with(context.result, { overflow })
+                    // もとのタイムゾーンに戻す
+                    .withTimeZone(reference)
+            );
+        } else {
+            // タイムゾーンがなければ日付時刻の設定だけ
+            return reference.with(context.result, { overflow });
+        }
     } catch (ex) {
-        console.log(ex);
+        assert(ex instanceof Error);
+        console.log(
+            `${context.input}\n${' '.repeat(context.index)}^\n${ex.stack}`,
+        );
         // 解析結果が不正な場合はundefinedを返す
         return undefined;
     }
-    // タイムゾーンを変更していたらreferenceのタイムゾーンに戻す
-    if (context.offset !== undefined) {
-        result = result.withTimeZone(reference);
-    }
-    return result;
 }

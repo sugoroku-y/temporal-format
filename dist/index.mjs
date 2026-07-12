@@ -1,59 +1,65 @@
 function e(...t) {
-	let n = Array.isArray(t[0]) ? t[0].reduce((e, n, r) => `${e}${t[r]}${n}`) : t[0], r = Error(n);
-	throw Error.captureStackTrace(r, e), r;
+	let n, r, i = Array.isArray(t[0]) ? t[0].reduce((e, i, a) => {
+		let o = t[a];
+		return o instanceof Error && (n = o, o = n.message), typeof o == "function" && (r = o, o = ""), `${e}${o}${i}`;
+	}) : t[0], a = Error(i, { cause: n });
+	throw Error.captureStackTrace(a, r ?? e), a;
 }
-function t(t, n) {
-	t || e(n ?? "Assertion failed");
+function t(n, r) {
+	n || e`${r ?? "Assertion failed"}${t}`;
 }
-var n = {
+function n(e, t) {
+	return e in t;
+}
+var r = {
 	y: {
-		l: [2, 4],
-		p: ["year"]
+		length: [2, 4],
+		properties: ["year"]
 	},
 	M: {
-		l: [
+		length: [
 			1,
 			2,
 			3,
 			4
 		],
-		p: ["monthCode"]
+		properties: ["monthCode"]
 	},
 	d: {
-		l: [1, 2],
-		p: ["day"]
+		length: [1, 2],
+		properties: ["day"]
 	},
 	E: {
-		l: [
+		length: [
 			1,
 			2,
 			3,
 			4
 		],
-		p: ["dayOfWeek"]
+		properties: ["dayOfWeek"]
 	},
 	a: {
-		l: [1],
-		p: ["hour"]
+		length: [1],
+		properties: ["hour"]
 	},
 	H: {
-		l: [1, 2],
-		p: ["hour"]
+		length: [1, 2],
+		properties: ["hour"]
 	},
 	h: {
-		l: [1, 2],
-		p: ["hour"]
+		length: [1, 2],
+		properties: ["hour"]
 	},
 	m: {
-		l: [1, 2],
-		p: ["minute"]
+		length: [1, 2],
+		properties: ["minute"]
 	},
 	s: {
-		l: [1, 2],
-		p: ["second"]
+		length: [1, 2],
+		properties: ["second"]
 	},
 	S: {
-		l: [
+		length: [
 			1,
 			2,
 			3,
@@ -64,29 +70,33 @@ var n = {
 			8,
 			9
 		],
-		p: [
+		properties: [
 			"millisecond",
 			"microsecond",
 			"nanosecond"
 		]
 	},
 	X: {
-		l: [
+		length: [
 			1,
 			2,
 			3
 		],
-		p: ["offset"]
+		properties: ["offset"]
 	},
 	x: {
-		l: [
+		length: [
 			1,
 			2,
 			3
 		],
-		p: ["offset"]
+		properties: ["offset"]
 	}
-}, r = {
+};
+function i(e) {
+	return n(e[0], r) && r[e[0]].length.includes(e[1]);
+}
+var a = {
 	"en-US": {
 		month: {
 			short: {
@@ -193,7 +203,7 @@ var n = {
 		},
 		dayPeriod: { amPm: ["午前", "午後"] }
 	}
-}, i = [
+}, o = [
 	"year",
 	"monthCode",
 	"day",
@@ -203,7 +213,7 @@ var n = {
 	"millisecond",
 	"microsecond",
 	"nanosecond"
-], a = {
+], s = {
 	y: 1,
 	M: 1,
 	d: 1,
@@ -213,26 +223,79 @@ var n = {
 	m: 1,
 	s: 1,
 	S: 1
-}, o = {
+}, c = {
 	x: 1,
 	X: 1
+}, l = [
+	"H",
+	"d",
+	"h",
+	"m",
+	"s"
+], u = {
+	year: {
+		2: /\d{2}/gy,
+		4: /\d{4}/gy
+	},
+	month: {
+		1: /1[0-2]?|[2-9]/gy,
+		2: /0[1-9]|1[0-2]/gy
+	},
+	dayOfMonth: {
+		1: /([12]\d?|3[01]?|[4-9])/gy,
+		2: /0[1-9]|[12]\d|3[01]/gy
+	},
+	hour24: {
+		1: /1\d?|2[0-3]?|[3-9]/gy,
+		2: /0\d|1\d|2[0-3]/gy
+	},
+	hour12: {
+		1: /1[0-2]?|[2-9]/gy,
+		2: /0[1-9]|1[0-2]/gy
+	},
+	minute: {
+		1: /0|[1-5]?\d|[6-9]/gy,
+		2: /[0-5]\d/gy
+	},
+	second: {
+		1: /0|[1-5]?\d|[6-9]/gy,
+		2: /[0-5]\d/gy
+	},
+	fractionSecond: {
+		1: /\d/gy,
+		2: /\d{1,2}/gy,
+		3: /\d{1,3}/gy,
+		4: /\d{1,4}/gy,
+		5: /\d{1,5}/gy,
+		6: /\d{1,6}/gy,
+		7: /\d{1,7}/gy,
+		8: /\d{1,8}/gy,
+		9: /\d{1,9}/gy
+	},
+	offset: {
+		1: /[+-]\d{2}(?:\d{2})?/gy,
+		2: /[+-]\d{4}/gy,
+		3: /[+-]\d{2}:\d{2}/gy
+	}
+}, d = {
+	d: "dayOfMonth",
+	H: "hour24",
+	h: "hour12",
+	m: "minute",
+	s: "second"
 };
-function s(e, t) {
-	return e in t;
+function f(e, t) {
+	let n = {};
+	for (let r of Array.isArray(e) ? e : [e]) Object.assign(n, { [r]: t });
+	return n;
 }
-function c(e, t = 2) {
-	return String(e).padStart(t, "0");
-}
-function l(e) {
-	return s(e[0], n) && n[e[0]].l.includes(e[1]);
-}
-var u = /* @__PURE__ */ new Map();
-function d(n) {
-	let r = u.get(n);
+var p = /* @__PURE__ */ new Map();
+function m(n) {
+	let r = p.get(n);
 	if (r) return r.result ?? e`${r.error}: ${n}`;
 	try {
 		let r = !1, i = [], a = (e) => {
-			t(l(e), `無効な書式指定子です: ${e[0].repeat(e[1])}`), i.push(e), r = !0;
+			i.push(e), r = !0;
 		}, o = (e) => {
 			i.length > 0 && typeof i[i.length - 1] == "string" ? i[i.length - 1] += e : i.push(e);
 		}, s = 0;
@@ -247,199 +310,123 @@ function d(n) {
 			}
 			a([i, r.length]);
 		}
-		return s < n.length && o(n.slice(s)), r || e`書式文字列がありません`, u.set(n, { result: i }), i;
+		return s < n.length && o(n.slice(s)), r || e`書式文字列がありません`, p.set(n, { result: i }), i;
 	} catch (r) {
-		t(r instanceof Error), u.set(n, { error: r.message }), e(`${r.message}: ${n}`);
+		t(r instanceof Error), p.set(n, { error: r.message }), e(`${r.message}: ${n}`);
 	}
 }
-function f(e, r, i, c) {
-	let l = !1, u = !1, d = !1, f = !1;
-	for (let c of e) {
-		if (typeof c == "string") continue;
-		let [e, p] = c;
-		for (let a of n[e].p) t(s(a, r), `${r.constructor.name}にはプロパティ${a}がありません: ${e.repeat(p)}: ${i}`);
-		l ||= e in a, u ||= e === "a", d ||= e === "h", f ||= e in o;
+function h(e, a, o, l) {
+	let u = !1, d = !1, f = !1, p = !1, m = !1;
+	for (let l of e) {
+		if (typeof l == "string") continue;
+		t(i(l), `無効な書式指定子です: ${l[0].repeat(l[1])}: ${o}`);
+		let [e, h] = l;
+		for (let i of r[e].properties) t(n(i, a), `${a.constructor.name}にはプロパティ${i}がありません: ${e.repeat(h)}: ${o}`);
+		u ||= e in s, d ||= e === "a", f ||= e === "h", p ||= e === "H", m ||= e in c;
 	}
-	c !== "format" && (t("with" in r && typeof r.with == "function", `${r.constructor.name}にはメソッドwithがありません`), f && t("withTimeZone" in r && typeof r.withTimeZone == "function", `${r.constructor.name}にはメソッドwithTimeZoneがありません`), t(l, `日付か時刻の書式文字列がありません: ${i}`), u ? t(d, `午前/午後(a)がある場合、12時間表記(h/hh)も必要です: ${i}`) : t(!d, `12時間表記(h/hh)がある場合、午前/午後(a)も必要です: ${i}`));
+	l !== "format" && (t("with" in a && typeof a.with == "function", `${a.constructor.name}にはメソッドwithがありません`), m && t("withTimeZone" in a && typeof a.withTimeZone == "function", `${a.constructor.name}にはメソッドwithTimeZoneがありません`), t(u, `日付か時刻の書式文字列がありません: ${o}`), d ? (t(f, `午前/午後(a)がある場合、12時間表記(h/hh)も必要です: ${o}`), t(!p, "12時間表記(h/hh)と24時間表記(H/HH)の両方を指定することはできません")) : t(!f, `12時間表記(h/hh)がある場合、午前/午後(a)も必要です: ${o}`));
 }
-function p(e, t) {
-	return e.replace({
-		1: /\D0?/g,
-		2: /\D/g
-	}[t], "");
+function g(e, t = 2) {
+	return String(e).padStart(t, "0");
 }
-function m(e, t, n) {
-	let i = r[t].month[n];
-	return s(e, i) ? i[e] : e;
-}
-function h(e, t, n) {
-	return r[t].dayOfWeek[n][e - 1];
-}
-function g({ millisecond: e, microsecond: t, nanosecond: n }, r) {
-	return `${c(e, 3)}${r > 3 ? c(t, 3) : ""}${r > 6 ? c(n, 3) : ""}`.slice(0, r);
-}
-function _(e, t, n) {
-	return n && e === "+00:00" ? "Z" : e.replace({
+var _ = f, v = {
+	..._("y", ({ year: e }, [, t]) => t === 2 ? g(e % 100) : String(e)),
+	..._("M", ({ monthCode: e }, [, r], { locale: i }) => {
+		if (r === 1 || r === 2) {
+			let n = (r === 1 ? /1[0-2]?|[2-9]/g : /0[1-9]|1[0-2]/g).exec(e)?.[0];
+			return t(n), n;
+		}
+		let o = r === 3 ? "short" : "long", s = a[i].month[o];
+		return t(n(e, s)), s[e];
+	}),
+	..._(l, (e, [t, n]) => {
+		let i = e[r[t].properties[0]];
+		return t === "h" && (i = (i + 11) % 12 + 1), n === 1 ? String(i) : g(i);
+	}),
+	..._("E", ({ dayOfWeek: e }, [, t], { locale: n }) => a[n].dayOfWeek[t === 4 ? "long" : "short"][e - 1]),
+	..._("a", ({ hour: e }, t, { locale: n }) => a[n].dayPeriod.amPm[Math.floor(e / 12)]),
+	..._("S", (e, [, t]) => `${g(e.millisecond, 3)}${t > 3 ? g(e.microsecond, 3) : ""}${t > 6 ? g(e.nanosecond, 3) : ""}`.slice(0, t)),
+	..._(["X", "x"], ({ offset: e }, [t, n]) => t === "X" && e === "+00:00" ? "Z" : e.replace({
 		1: /:(?:00)?/,
 		2: /:/,
 		3: /^/
-	}[t], "");
-}
-function v(e, t) {
-	return {
-		1: (e) => String(e),
-		2: (e) => c(e)
-	}[t](e);
-}
-var y = {
-	y: ({ year: e }, t) => ({
-		2: (e) => c(e % 100),
-		4: (e) => String(e)
-	})[t](e),
-	M: ({ monthCode: e }, t, { locale: n }) => ({
-		1: (e) => p(e, 1),
-		2: (e) => p(e, 2),
-		3: (e, t) => m(e, t, "short"),
-		4: (e, t) => m(e, t, "long")
-	})[t](e, n),
-	d: ({ day: e }, t) => v(e, t),
-	H: ({ hour: e }, t) => v(e, t),
-	h: ({ hour: e }, t) => v((e + 11) % 12 + 1, t),
-	a: ({ hour: e }, t, { locale: n }) => r[n].dayPeriod.amPm[Math.floor(e / 12)],
-	m: ({ minute: e }, t) => v(e, t),
-	s: ({ second: e }, t) => v(e, t),
-	S: (e, t) => g(e, t),
-	E: ({ dayOfWeek: e }, t, { locale: n }) => h(e, n, t === 4 ? "long" : "short"),
-	X: ({ offset: e }, t) => _(e, t, !0),
-	x: ({ offset: e }, t) => _(e, t)
+	}[n], ""))
 };
-function b(e, n, { locale: i = "en-US" } = {}) {
-	t(s(i, r), `サポートしていないロケール: ${i}`), t(e.calendarId === void 0 || e.calendarId === "iso8601", `対応していないカレンダーです: ${e.calendarId}`);
-	let a = { locale: i }, o = d(n);
-	f(o, e, n, "format");
+function y(e, r, { locale: i = "en-US" } = {}) {
+	t(n(i, a), `サポートしていないロケール: ${i}`), t(e.calendarId === void 0 || e.calendarId === "iso8601", `対応していないカレンダーです: ${e.calendarId}`);
+	let o = { locale: i }, s = m(r);
+	h(s, e, r, "format");
 	let c = [];
-	for (let t of o) {
+	for (let t of s) {
 		if (typeof t == "string") {
 			c.push(t);
 			continue;
 		}
-		let [n, r] = t, i = y[n];
-		c.push(i(e, r, a));
+		let [n] = t, r = v[n];
+		c.push(r(e, t, o));
 	}
 	return c.join("");
 }
-function x(e, t) {
+function b(e, t) {
 	return e.input.startsWith(t, e.index) ? (e.index += t.length, !0) : !1;
 }
-function S(e, n) {
-	t(n.global && n.sticky, `Pattern must have 'g' and 'y' flags: ${n}`), n.lastIndex = e.index;
+function x(e, n) {
+	t(n.global && n.sticky, `パターンにはgとyのフラグを指定してください: ${n}`), n.lastIndex = e.index;
 	let r = n.exec(e.input);
 	return r ? (e.index += r[0].length, r) : null;
 }
-function C(t, n, r) {
-	for (let [e, r] of n.entries()) if (x(t, r)) return [e, r];
-	e(`${r} not found`);
+function S(e, t) {
+	for (let [n, r] of Array.isArray(t) ? t.entries() : Object.entries(t)) if (b(e, r)) return [n, r];
 }
-function w(e, t) {
+function C(e, t) {
 	let n = e + 50;
 	return t + (Math.floor(n / 100) - (t < n % 100 ? 0 : 1)) * 100;
 }
-function T(n, r) {
-	let [i] = S(n, {
-		2: /\d{2}/gy,
-		4: /\d{4}/gy
-	}[r]) ?? e`Year not found`, a = parseInt(i, 10);
-	if (r === 4) {
-		n.result.year = a;
-		return;
-	}
-	t(n.referenceYear !== void 0), n.result.year = w(n.referenceYear, a);
-}
-function E(t, n) {
-	if (n === 1 || n === 2) {
-		let [r] = S(t, {
-			1: /1[0-2]?|[2-9]/gsy,
-			2: /0[1-9]|1[0-2]/gsy
-		}[n]) ?? e`Month not found`;
-		t.result.monthCode = `M${r.padStart(2, "0")}`;
-		return;
-	}
-	let i = n === 3 ? "short" : "long", a = r[t.locale].month[i];
-	for (let [e, n] of Object.entries(a)) if (x(t, n)) {
-		t.result.monthCode = e;
-		return;
-	}
-	e(`Month not found for type ${i} in locale ${t.locale}`);
-}
-function D(t, n, r) {
-	let [i] = S(t, n) ?? e`${r} not found`;
-	t.result[r] = parseInt(i, 10);
-}
-function O(e) {
-	let [t] = C(e, r[e.locale].dayPeriod.amPm, "day period");
-	e.isPm = t === 1;
-}
-function k(t, n) {
-	let [r] = S(t, {
-		1: /\d/gy,
-		2: /\d{1,2}/gy,
-		3: /\d{1,3}/gy,
-		4: /\d{1,4}/gy,
-		5: /\d{1,5}/gy,
-		6: /\d{1,6}/gy,
-		7: /\d{1,7}/gy,
-		8: /\d{1,8}/gy,
-		9: /\d{1,9}/gy
-	}[n]) ?? e`Fractional second not found`;
-	t.result.millisecond = parseInt(r.slice(0, 3).padEnd(3, "0"), 10), t.result.microsecond = r.length > 3 ? parseInt(r.slice(3, 6).padEnd(3, "0"), 10) : 0, t.result.nanosecond = r.length > 6 ? parseInt(r.slice(6, 9).padEnd(3, "0"), 10) : 0;
-}
-function A(e, t) {
-	let n = t === 4 ? "long" : "short";
-	C(e, r[e.locale].dayOfWeek[n], "Day of week");
-}
-function j(t, n, r) {
-	if (r && x(t, "Z")) {
-		t.offset = "UTC";
-		return;
-	}
-	[t.offset] = S(t, {
-		1: /[+-]\d{2}(?:\d{2})?/gy,
-		2: /[+-]\d{4}/gy,
-		3: /[+-]\d{2}:\d{2}/gy
-	}[n]) ?? e`Time zone not found`;
-}
-var M = {
-	y: (e, t) => T(e, t),
-	M: (e, t) => E(e, t),
-	d: (e, t) => D(e, {
-		1: /([12]\d?|3[01]?|[4-9])/gy,
-		2: /0[1-9]|[12]\d|3[01]/gy
-	}[t], "day"),
-	H: (e, t) => D(e, {
-		1: /1\d?|2[0-3]?|[3-9]/gy,
-		2: /0\d|1\d|2[0-3]/gy
-	}[t], "hour"),
-	h: (e, t) => D(e, {
-		1: /1[0-2]?|[2-9]/gy,
-		2: /0[1-9]|1[0-2]/gy
-	}[t], "hour"),
-	a: (e) => O(e),
-	m: (e, t) => D(e, {
-		1: /0|[1-5]?\d|[6-9]/gy,
-		2: /[0-5]\d/gy
-	}[t], "minute"),
-	s: (e, t) => D(e, {
-		1: /0|[1-5]?\d|[6-9]/gy,
-		2: /[0-5]\d/gy
-	}[t], "second"),
-	S: (e, t) => k(e, t),
-	E: (e, t) => A(e, t),
-	X: (e, t) => j(e, t, !0),
-	x: (e, t) => j(e, t, !1)
+var w = f, T = {
+	...w("y", (n, [, r]) => {
+		let [i] = x(n, u.year[r]) ?? e`Year not found`, a = parseInt(i, 10);
+		if (r === 4) {
+			n.result.year = a;
+			return;
+		}
+		t(n.referenceYear !== void 0), n.result.year = C(n.referenceYear, a);
+	}),
+	...w("M", (t, [, n]) => {
+		if (n === 1 || n === 2) {
+			let [r] = x(t, u.month[n]) ?? e`Month not found`;
+			t.result.monthCode = `M${r.padStart(2, "0")}`;
+			return;
+		}
+		let r = n === 3 ? "short" : "long", i = a[t.locale].month[r], [o] = S(t, i) ?? e`Month not found`;
+		t.result.monthCode = o;
+	}),
+	...w(l, (t, [n, i]) => {
+		let a = u[d[n]][i], o = r[n].properties[0], [s] = x(t, a) ?? e`${o} not found`;
+		t.result[o] = parseInt(s, 10);
+	}),
+	...w("a", (t) => {
+		let [n] = S(t, a[t.locale].dayPeriod.amPm) ?? e`Day period not found`;
+		t.isPm = n === 1;
+	}),
+	...w("S", (t, [, n]) => {
+		let [r] = x(t, u.fractionSecond[n]) ?? e`Fractional second not found`;
+		t.result.millisecond = parseInt(r.slice(0, 3).padEnd(3, "0"), 10), t.result.microsecond = r.length > 3 ? parseInt(r.slice(3, 6).padEnd(3, "0"), 10) : 0, t.result.nanosecond = r.length > 6 ? parseInt(r.slice(6, 9).padEnd(3, "0"), 10) : 0;
+	}),
+	...w("E", (t, [, n]) => {
+		let r = n === 4 ? "long" : "short";
+		S(t, a[t.locale].dayOfWeek[r]) || e`Day of week not found`;
+	}),
+	...w(["X", "x"], (t, [n, r]) => {
+		if (n === "X" && b(t, "Z")) {
+			t.offset = "+00:00";
+			return;
+		}
+		[t.offset] = x(t, u.offset[r]) ?? e`Time zone not found`;
+	})
 };
-function N({ result: e }) {
+function E({ result: e }) {
 	let t = !1;
-	for (let n of i) {
+	for (let n of o) {
 		if (n in e) {
 			t ||= !0;
 			continue;
@@ -453,42 +440,33 @@ function N({ result: e }) {
 		}
 	}
 }
-function P(e, n, r, i) {
-	let a = {
-		input: n,
-		index: 0,
-		locale: r,
-		result: {},
-		referenceYear: i
-	};
-	for (let t of e) {
-		if (typeof t == "string") {
-			if (!x(a, t)) return;
+function D(e, n) {
+	for (let r of n) {
+		if (typeof r == "string") {
+			t(b(e, r), `一致しないリテラル文字列: ${r}`);
 			continue;
 		}
-		try {
-			M[t[0]](a, t[1]);
-		} catch (e) {
-			console.log(e);
-			return;
-		}
+		let [n] = r, i = T[n];
+		i(e, r);
 	}
-	if (a.index === n.length) return a.isPm !== void 0 && (t(a.result.hour !== void 0), a.result.hour === 12 ? a.isPm || (a.result.hour = 0) : a.isPm && (a.result.hour += 12)), N(a), a;
+	t(e.index === e.input.length, `余分な文字列があります: ${e.input.slice(e.index)}`), e.isPm !== void 0 && (t(e.result.hour !== void 0, "午前午後が指定されていれば時間の指定は必須"), e.result.hour === 12 ? e.isPm || (e.result.hour = 0) : e.isPm && (e.result.hour += 12)), E(e);
 }
-function F(e, n, i, { locale: a = "en-US", overflow: o = "reject" } = {}) {
-	t(s(a, r), `サポートしていないロケール: ${a}`), t(o === "constrain" || o === "reject", `サポートしていないオーバーフローの挙動: ${o}`), t(i.calendarId === void 0 || i.calendarId === "iso8601", `対応していないカレンダーです: ${i.calendarId}`);
-	let c = d(n);
-	f(c, i, n, "parse");
-	let l = P(c, e, a, i.year);
-	if (!l) return;
-	let u = i;
-	l.offset !== void 0 && (u = u.withTimeZone(l.offset));
+function O(e, r, i, { locale: o = "en-US", overflow: s = "reject" } = {}) {
+	t(n(o, a), `サポートしていないロケール: ${o}`), t(s === "constrain" || s === "reject", `サポートしていないオーバーフローの挙動: ${s}`), t(i.calendarId === void 0 || i.calendarId === "iso8601", `対応していないカレンダーです: ${i.calendarId}`);
+	let c = m(r);
+	h(c, i, r, "parse");
+	let l = {
+		input: e,
+		index: 0,
+		locale: o,
+		result: {},
+		referenceYear: i.year
+	};
 	try {
-		u = u.with(l.result, { overflow: o });
+		return D(l, c), l.offset === void 0 ? i.with(l.result, { overflow: s }) : i.withTimeZone?.(l.offset).with(l.result, { overflow: s }).withTimeZone(i);
 	} catch (e) {
-		console.log(e);
+		t(e instanceof Error), console.log(`${l.input}\n${" ".repeat(l.index)}^\n${e.stack}`);
 		return;
 	}
-	return l.offset !== void 0 && (u = u.withTimeZone(i)), u;
 }
-export { b as format, F as parse };
+export { y as format, O as parse };

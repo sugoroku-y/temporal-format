@@ -1,6 +1,11 @@
 import type { FormatTarget } from './FormatTarget';
-import type { TokenNode } from './parseFormatString';
-import type { AllPropertyNames, Alphabet } from './types';
+import { isKeyOf } from './isKeyOf';
+import type {
+    LiteralNode,
+    SuccessResult,
+    TokenNode,
+} from './parseFormatString';
+import type { AllPropertyNames, Alphabet, UnionToTuple } from './types';
 
 export const FORMAT_TOKEN_MAP = {
     y: { length: [2, 4], properties: ['year'] },
@@ -29,13 +34,22 @@ export type FormatTokenMap = typeof FORMAT_TOKEN_MAP;
 
 type StrictTokenNode = {
     [Char in keyof FormatTokenMap]: {
-        [Length in FormatTokenMap[Char]['length'][number]]:
-            TokenNode<Char,Length>
+        [Length in FormatTokenMap[Char]['length'][number]]: TokenNode<
+            Char,
+            Length
+        >;
     }[FormatTokenMap[Char]['length'][number]];
 }[keyof FormatTokenMap];
 export type IsSupportedToken<Token extends TokenNode> =
     Token extends StrictTokenNode ? true : false;
+export type ParsedFormatString = SuccessResult<LiteralNode | StrictTokenNode>;
 
+export function isSupportedToken(token: TokenNode): token is StrictTokenNode {
+    return (
+        isKeyOf(token[0], FORMAT_TOKEN_MAP) &&
+        FORMAT_TOKEN_MAP[token[0]].length.includes(token[1])
+    );
+}
 export const LOCALES = {
     'en-US': {
         month: {
@@ -169,11 +183,7 @@ export const LOCALES = {
 export type Locale = keyof typeof LOCALES;
 
 export type WithValue = Omit<
-    FormatTarget['with'] extends (
-        _: infer R,
-    ) => unknown
-        ? R
-        : never,
+    FormatTarget['with'] extends (_: infer R) => unknown ? R : never,
     // eraには対応しない
     | 'era'
     | 'eraYear'
@@ -208,9 +218,11 @@ export const DATE_TIME_TOKEN = {
     S: 1,
 } as const satisfies {
     // DateTimePropertiesがpに含まれる書式指定子を抽出
-    [Char in keyof FormatTokenMap as FormatTokenMap[Char]['properties'][number] extends DateTimeProperties
-        ? Char
-        : never]: 1;
+    [
+        Char in keyof FormatTokenMap as FormatTokenMap[Char]['properties'][number] extends DateTimeProperties
+            ? Char
+            : never
+    ]: 1;
 };
 export type DateTimeToken = keyof typeof DATE_TIME_TOKEN;
 
@@ -219,17 +231,81 @@ export const OFFSET_TOKEN = {
     X: 1,
 } as const satisfies {
     // offsetがpに含まれる書式指定子を抽出
-    [Char in keyof FormatTokenMap as FormatTokenMap[Char]['properties'][number] extends 'offset'
-        ? Char
-        : never]: 1;
+    [
+        Char in keyof FormatTokenMap as FormatTokenMap[Char]['properties'][number] extends 'offset'
+            ? Char
+            : never
+    ]: 1;
 };
 export type OffsetToken = keyof typeof OFFSET_TOKEN;
 
-export type Char2Digit = keyof {
-    [Char in keyof FormatTokenMap as FormatTokenMap[Char] extends {
-        length: [1, 2];
-        properties: [string];
+export const CHAR_2DIGIT = [
+    'H',
+    'd',
+    'h',
+    'm',
+    's',
+] as const satisfies UnionToTuple<
+    keyof {
+        [
+            Char in keyof FormatTokenMap as FormatTokenMap[Char] extends {
+                // lengthが1,2でpropertiesが一つだけのものに絞り込む
+                length: [1, 2];
+                properties: [string];
+            }
+                ? Char
+                : never
+        ]: 1;
     }
-        ? Char
-        : never]: 1;
-};
+>;
+
+export type Char2Digit = (typeof CHAR_2DIGIT)[number];
+
+export const PATTERNS = {
+    year: {
+        2: /\d{2}/gy,
+        4: /\d{4}/gy,
+    },
+    month: { 1: /1[0-2]?|[2-9]/gy, 2: /0[1-9]|1[0-2]/gy },
+    dayOfMonth: {
+        1: /([12]\d?|3[01]?|[4-9])/gy,
+        2: /0[1-9]|[12]\d|3[01]/gy,
+    },
+    hour24: { 1: /1\d?|2[0-3]?|[3-9]/gy, 2: /0\d|1\d|2[0-3]/gy },
+    hour12: {
+        1: /1[0-2]?|[2-9]/gy,
+        2: /0[1-9]|1[0-2]/gy,
+    },
+    minute: {
+        1: /0|[1-5]?\d|[6-9]/gy,
+        2: /[0-5]\d/gy,
+    },
+    second: {
+        1: /0|[1-5]?\d|[6-9]/gy,
+        2: /[0-5]\d/gy,
+    },
+    fractionSecond: {
+        1: /\d/gy,
+        2: /\d{1,2}/gy,
+        3: /\d{1,3}/gy,
+        4: /\d{1,4}/gy,
+        5: /\d{1,5}/gy,
+        6: /\d{1,6}/gy,
+        7: /\d{1,7}/gy,
+        8: /\d{1,8}/gy,
+        9: /\d{1,9}/gy,
+    },
+    offset: {
+        1: /[+-]\d{2}(?:\d{2})?/gy,
+        2: /[+-]\d{4}/gy,
+        3: /[+-]\d{2}:\d{2}/gy,
+    },
+} as const;
+
+export const CHAR_TO_PATTERN = {
+    d: 'dayOfMonth',
+    H: 'hour24',
+    h: 'hour12',
+    m: 'minute',
+    s: 'second',
+} as const satisfies Record<Char2Digit, keyof typeof PATTERNS>;

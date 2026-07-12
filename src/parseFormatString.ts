@@ -1,7 +1,5 @@
 import { assert } from './asserts';
-import { FORMAT_TOKEN_MAP, type FormatTokenMap } from './constants';
 import { error } from './error';
-import { isKeyOf } from './isKeyOf';
 import type { Expect, It, ToEqual } from './type-test';
 import type { Alphabet, FailoverIfNever, Increment, Repeat } from './types';
 
@@ -88,18 +86,26 @@ declare const _tests_AddLiteral: [
 export type ParseFormatString<S extends string, R extends SuccessResult = []> =
     // 先頭の1文字を抽出
     S extends `${infer First}${infer Rest}`
-        ? First extends "'" | '"'
-            ? Rest extends `${First}${infer Rest2}`
-                ? ParseFormatString<Rest2, AddLiteral<R, First>>
-                : ParseQuotedLiteral<Rest, First, R>
-            : ParseFormatString<
+        ? // 先頭の文字が引用符
+          First extends "'" | '"'
+            ? // 次の文字も同じなら
+              Rest extends `${First}${infer Rest2}`
+                ? // 引用符1文字をリテラル文字列に追加して続行
+                  ParseFormatString<Rest2, AddLiteral<R, First>>
+                : // クォートされたリテラル文字列の解析に移行
+                  ParseQuotedLiteral<Rest, First, R>
+            : // それ以外の文字は結果に適宜追加して続行
+              ParseFormatString<
                   Rest,
-                  // 先頭がアルファベット
+                  // 先頭がアルファベットなら
                   First extends Alphabet
-                      ? AddToken<R, First>
-                      : AddLiteral<R, First>
+                      ? // 書式指定子として追加
+                        AddToken<R, First>
+                      : // リテラル文字列として追加
+                        AddLiteral<R, First>
               >
-        : R;
+        : // 最後まで行ったら結果を返す
+          R;
 
 /** 書式文字列中の引用符内を解析 */
 type ParseQuotedLiteral<
@@ -109,14 +115,22 @@ type ParseQuotedLiteral<
 > =
     // 先頭の1文字を抽出
     S extends `${infer First}${infer Rest}`
-        ? First extends "'" | '"'
-            ? Rest extends `${First}${infer Rest2}`
-                ? ParseQuotedLiteral<Rest2, Q, AddLiteral<R, First>>
-                : First extends Q
-                  ? ParseFormatString<Rest, R>
-                  : FailureResult<`単独の引用符${First}が使われています`>
-            : ParseQuotedLiteral<Rest, Q, AddLiteral<R, First>>
-        : FailureResult<`引用符${Q}が閉じられていません`>;
+        ? // 先頭は引用符
+          First extends "'" | '"'
+            ? // 次の文字も同じなら
+              Rest extends `${First}${infer Rest2}`
+                ? // リテラル文字列に引用符1文字追加して続行
+                  ParseQuotedLiteral<Rest2, Q, AddLiteral<R, First>>
+                : // 開始した引用符と同じ
+                  First extends Q
+                  ? // 引用符終了
+                    ParseFormatString<Rest, R>
+                  : // 開始と違う引用符はエラー
+                    FailureResult<`単独の引用符${First}が使われています`>
+            : // リテラル文字列に1文字追加して続行
+              ParseQuotedLiteral<Rest, Q, AddLiteral<R, First>>
+        : // 引用符が来ないのに終了したらエラー
+          FailureResult<`引用符${Q}が閉じられていません`>;
 
 declare const _tests_ParseFormatString: [
     ...It<
@@ -166,39 +180,19 @@ export type TokenNodeToString<Token extends TokenNode> = Token extends Token
     ? Repeat<Token[0], Token[1]>
     : never;
 
-type StrictTokenNode = {
-    [K in keyof FormatTokenMap]: TokenNode<
-        K,
-        FormatTokenMap[K]['length'][number]
-    >;
-}[keyof FormatTokenMap];
+type CacheEntry = { result: SuccessResult } | { result?: never; error: string };
 
-function isStrictTokenNode(node: TokenNode): node is StrictTokenNode {
-    return (
-        isKeyOf(node[0], FORMAT_TOKEN_MAP) &&
-        FORMAT_TOKEN_MAP[node[0]].length.includes(node[1])
-    );
-}
+const cache = new Map<string, CacheEntry>();
 
-export type ParsedFormatString = ReadonlyArray<LiteralNode | StrictTokenNode>;
-
-type Cache = { result: ParsedFormatString } | { result?: never; error: string };
-
-const cache = new Map<string, Cache>();
-
-export function parseFormatString(formatString: string): ParsedFormatString {
+export function parseFormatString(formatString: string): SuccessResult {
     const cached = cache.get(formatString);
     if (cached) {
         return cached.result ?? error`${cached.error}: ${formatString}`;
     }
     try {
         let hasToken = false;
-        const nodes: [...ParsedFormatString] = [];
+        const nodes: SuccessResult = [];
         const addToken = (token: TokenNode) => {
-            assert(
-                isStrictTokenNode(token),
-                `無効な書式指定子です: ${token[0].repeat(token[1])}`,
-            );
             nodes.push(token);
             hasToken = true;
         };

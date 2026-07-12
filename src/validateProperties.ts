@@ -1,16 +1,22 @@
 import { assert } from './asserts';
-import { DATE_TIME_TOKEN, FORMAT_TOKEN_MAP, OFFSET_TOKEN } from './constants';
+import {
+    DATE_TIME_TOKEN,
+    FORMAT_TOKEN_MAP,
+    isSupportedToken,
+    OFFSET_TOKEN,
+    type ParsedFormatString,
+} from './constants';
 import type { FormatTarget } from './FormatTarget';
 import { isKeyOf } from './isKeyOf';
-import type { ParsedFormatString } from './parseFormatString';
+import type { SuccessResult } from './parseFormatString';
 import type { Purpose } from './ValidateFormatString';
 
 export function validateProperties(
-    nodes: ParsedFormatString,
+    nodes: SuccessResult,
     instance: FormatTarget,
     formatString: string,
     purpose: Purpose,
-): asserts instance is Temporal.ZonedDateTime {
+): asserts nodes is ParsedFormatString {
     let hasDateTime = false;
     let hasDayPeriod = false;
     let has12hours = false;
@@ -20,7 +26,12 @@ export function validateProperties(
         if (typeof node === 'string') {
             continue;
         }
+        assert(
+            isSupportedToken(node),
+            `無効な書式指定子です: ${node[0].repeat(node[1])}: ${formatString}`,
+        );
         const [char, length] = node;
+
         for (const property of FORMAT_TOKEN_MAP[char].properties) {
             assert(
                 isKeyOf(property, instance),

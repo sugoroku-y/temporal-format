@@ -2,12 +2,29 @@ type FormatTarget = Temporal.ZonedDateTime | Temporal.PlainDateTime | Temporal.P
 type Split<S extends string> = S extends `${infer First}${infer Rest}` ? First | Split<Rest> : never;
 type UppercaseAlphabet = Split<'ABCDEFGHIJKLMNOPQRSTUVWXYZ'>;
 type LowercaseAlphabet = Lowercase<UppercaseAlphabet>;
+/** アルファベット1文字の文字列リテラル型 */
 type Alphabet = UppercaseAlphabet | LowercaseAlphabet;
+/**
+ * `{}`型はeslintで警告されるため別名を用意
+ */
 type NonNullish = Record<never, never>;
+/**
+ * TがneverならばFallbackにする
+ */
 type FailoverIfNever<T, Fallback> = [T] extends [never] ? Fallback : T;
 type Counter<N extends number, R extends 1[] = []> = R['length'] extends N ? R : Counter<N, [1, ...R]>;
+/**
+ * 数を1つ増やす
+ */
 type Increment<N extends number> = Extract<[...Counter<N>, 1]['length'], number>;
 type RepeatSub<S extends string, N extends number, R extends string, C extends 1[]> = C['length'] extends N ? R : RepeatSub<S, N, `${R}${S}`, [1, ...C]>;
+/**
+ * 文字列リテラル型を指定回数繰り返した文字列リテラル型を返す型関数
+ *
+ * S、N。いずれもUnion型を指定するとそれぞれの型で繰り返したUnion型となる。
+ * @template S 文字列リテラル型
+ * @template N 繰り返す回数
+ */
 type Repeat<S extends string, N extends number> = S extends S ? N extends N ? RepeatSub<S, N, '', []> : never : never;
 /** 書式指定のノード */
 type TokenNode<Char extends string = string, Length extends number = number> = [Char, Length];
@@ -30,56 +47,56 @@ type ExtractToken<R extends ParseResult> = R extends SuccessResult<infer Parsed 
 type TokenNodeToString<Token extends TokenNode> = Token extends Token ? Repeat<Token[0], Token[1]> : never;
 declare const FORMAT_TOKEN_MAP: {
   readonly y: {
-    readonly l: [2, 4];
-    readonly p: ["year"];
+    readonly length: [2, 4];
+    readonly properties: ["year"];
   };
   readonly M: {
-    readonly l: [1, 2, 3, 4];
-    readonly p: ["monthCode"];
+    readonly length: [1, 2, 3, 4];
+    readonly properties: ["monthCode"];
   };
   readonly d: {
-    readonly l: [1, 2];
-    readonly p: ["day"];
+    readonly length: [1, 2];
+    readonly properties: ["day"];
   };
   readonly E: {
-    readonly l: [1, 2, 3, 4];
-    readonly p: ["dayOfWeek"];
+    readonly length: [1, 2, 3, 4];
+    readonly properties: ["dayOfWeek"];
   };
   readonly a: {
-    readonly l: [1];
-    readonly p: ["hour"];
+    readonly length: [1];
+    readonly properties: ["hour"];
   };
   readonly H: {
-    readonly l: [1, 2];
-    readonly p: ["hour"];
+    readonly length: [1, 2];
+    readonly properties: ["hour"];
   };
   readonly h: {
-    readonly l: [1, 2];
-    readonly p: ["hour"];
+    readonly length: [1, 2];
+    readonly properties: ["hour"];
   };
   readonly m: {
-    readonly l: [1, 2];
-    readonly p: ["minute"];
+    readonly length: [1, 2];
+    readonly properties: ["minute"];
   };
   readonly s: {
-    readonly l: [1, 2];
-    readonly p: ["second"];
+    readonly length: [1, 2];
+    readonly properties: ["second"];
   };
   readonly S: {
-    readonly l: [1, 2, 3, 4, 5, 6, 7, 8, 9];
-    readonly p: ["millisecond", "microsecond", "nanosecond"];
+    readonly length: [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    readonly properties: ["millisecond", "microsecond", "nanosecond"];
   };
   readonly X: {
-    readonly l: [1, 2, 3];
-    readonly p: ["offset"];
+    readonly length: [1, 2, 3];
+    readonly properties: ["offset"];
   };
   readonly x: {
-    readonly l: [1, 2, 3];
-    readonly p: ["offset"];
+    readonly length: [1, 2, 3];
+    readonly properties: ["offset"];
   };
 };
 type FormatTokenMap = typeof FORMAT_TOKEN_MAP;
-type StrictTokenNode = { [K in keyof FormatTokenMap]: TokenNode<K, FormatTokenMap[K]['l'][number]> }[keyof FormatTokenMap];
+type StrictTokenNode = { [Char in keyof FormatTokenMap]: { [Length in FormatTokenMap[Char]['length'][number]]: TokenNode<Char, Length>; }[FormatTokenMap[Char]['length'][number]]; }[keyof FormatTokenMap];
 type IsSupportedToken<Token extends TokenNode> = Token extends StrictTokenNode ? true : false;
 declare const LOCALES: {
   readonly 'en-US': {
@@ -204,9 +221,9 @@ declare const DATE_TIME_TOKEN: {
   readonly S: 1;
 };
 type DateTimeToken = keyof typeof DATE_TIME_TOKEN;
-type RequiredProperties<S extends string> = S extends S ? ParseFormatString<S> extends SuccessResult<infer Parsed> ? FormatTokenMap[Extract<Extract<Parsed, TokenNode>[0], keyof FormatTokenMap>]['p'][number] : never : never;
-type TargetForSub<Properties extends FormatTokenMap[keyof FormatTokenMap]['p'][number]> = [Properties] extends [never] ? FormatTarget : Pick<Temporal.ZonedDateTime, Properties>;
-type ReferenceForSub<Properties extends FormatTokenMap[keyof FormatTokenMap]['p'][number]> = TargetForSub<Properties> & {
+type RequiredProperties<S extends string> = S extends S ? ParseFormatString<S> extends SuccessResult<infer Parsed> ? FormatTokenMap[Extract<Extract<Parsed, TokenNode>[0], keyof FormatTokenMap>]['properties'][number] : never : never;
+type TargetForSub<Properties extends FormatTokenMap[keyof FormatTokenMap]['properties'][number]> = [Properties] extends [never] ? FormatTarget : Pick<Temporal.ZonedDateTime, Properties>;
+type ReferenceForSub<Properties extends FormatTokenMap[keyof FormatTokenMap]['properties'][number]> = TargetForSub<Properties> & {
   with(like: TargetForSub<Exclude<Properties, 'dayOfWeek' | 'offset'>>): unknown;
 } & ('offset' extends Properties ? Pick<Temporal.ZonedDateTime, 'withTimeZone'> : NonNullish);
 /**
@@ -248,23 +265,23 @@ type ValidateTokenExistence<R extends ParseResult> = ExtractToken<R> extends ['n
  * 有効な書式指定子だけであればneverを返す
  * @template R ParseFormatStringの返り値
  */
-type ValidateTokenSupported<R extends ParseResult> = ExtractToken<R> extends infer Token extends TokenNode ? Token extends Token ? IsSupportedToken<Token> extends false ? `無効な書式指定子です: ${TokenNodeToString<Token>}` : never : never : never;
+type ValidateTokenSupported<R extends ParseResult> = ExtractToken<R> extends (infer Token extends TokenNode) ? Token extends Token ? IsSupportedToken<Token> extends false ? `無効な書式指定子です: ${TokenNodeToString<Token>}` : never : never : never;
 /**
  * 日付や時刻の書式指定子がなければエラーメッセージを返す型関数
  *
  * あればneverを返す
  * @template R ParseFormatStringの返り値
  */
-type ValidateDateTimeTokenExistence<R extends ParseResult> = ExtractToken<R> extends infer Token extends TokenNode ? [Extract<Token, TokenNode<DateTimeToken>>] extends [never] ? '日付や時刻の書式指定子がありません' : never : never;
+type ValidateDateTimeTokenExistence<R extends ParseResult> = ExtractToken<R> extends (infer Token extends TokenNode) ? [Extract<Token, TokenNode<DateTimeToken>>] extends [never] ? '日付や時刻の書式指定子がありません' : never : never;
 /**
  * 午前午後の書式指定子と12時間制の時間の書式指定子がどちらか一方だけ指定されていればエラーメッセージを返す型関数
  *
  * どちらも指定されていない、もしくは両方指定されていればneverを返す
  * @template R ParseFormatStringの返り値
  */
-type ValidateDayPeriodAnd12Hours<R extends ParseResult> = ExtractToken<R> extends infer Token extends TokenNode ? {
+type ValidateDayPeriodAnd12Hours<R extends ParseResult> = ExtractToken<R> extends (infer Token extends TokenNode) ? {
   __: never;
-  ah: never;
+  ah: [Extract<Token[0], 'H'>] extends [never] ? never : '12時間表記(h/hh)と24時間表記(H/HH)の両方を指定することはできません';
   a_: '午前/午後(a)がある場合、12時間表記(h/hh)も必要です';
   _h: '12時間表記(h/hh)がある場合、午前/午後(a)も必要です';
 }[`${FailoverIfNever<Extract<Token[0], 'a'>, '_'>}${FailoverIfNever<Extract<Token[0], 'h'>, '_'>}`] : never;
@@ -288,7 +305,7 @@ type ValidationMessage<R extends ParseResult, P extends Purpose> = ValidateParsi
  *
  * Sにstring型やテンプレートリテラル型を指定した場合は解析できないため検証成功とみなす。
  */
-type ValidateFormatString<S extends string, P extends Purpose> = NonNullish extends Record<S, never> ? ValidationSuccess : S extends S ? ValidationMessage<ParseFormatString<S>, P> extends infer Message extends string ? [Message] extends [never] ? ValidationSuccess : ValidationFailure<`${Message}: ${S}`> : never : never;
+type ValidateFormatString<S extends string, P extends Purpose> = NonNullish extends Record<S, never> ? ValidationSuccess : S extends S ? ValidationMessage<ParseFormatString<S>, P> extends (infer Message extends string) ? [Message] extends [never] ? ValidationSuccess : ValidationFailure<`${Message}: ${S}`> : never : never;
 /**
  * 整形のためのオプション
  */
@@ -319,61 +336,6 @@ interface FormatOptions {
  */
 declare function format<F extends string>(target: TargetFor<F>, formatString: F, options?: FormatOptions, ..._: ValidateFormatString<F, 'format'>): string;
 /**
- * 解析に使用するオプション
- */
-interface ParseOptions {
-  /** 解析時に使用するオプション {@link Locale} */
-  locale?: Locale;
-  /**
-   * 範囲外の値の扱いを指定するオプション
-   *
-   * 以下が指定できます。
-   *
-   * - `reject` 範囲外の値が指定されたら受け付けない(`undefined`を返す): デフォルト
-   * - `constrain` 範囲内に収まるように調整して受け付ける
-   *
-   * 上記以外を指定するとエラーになります。
-   */
-  overflow?: 'reject' | 'constrain';
-}
-/**
- * 指定された書式文字列にしたがって、文字列を日付時刻に変換します。
- *
- * 入力文字列が書式文字列にしたがっていない場合はundefinedを返します。
- *
- * `E`や`EEEE`はその位置に曜日の表記がないとundefinedを返しますが、日付の解析の際には無視されます。
- *
- * たとえば、2023/01/01は日曜日ですが、`'2023-01-01 (Mon)'` は書式文字列 `'yyyy-MM-dd (EEE)'` にしたがっているため、解析結果は`undefined`にはならず、また日付にも影響しないため`2023/1/1`となります。
- *
- * 日時や時刻に変換される書式文字列が指定されていないと、つまり曜日やタイムゾーンの書式文字列だけだとエラーになります。
- *
- * また`a`(午前・午後)と`h`や`hh`(12時間制の時)はセットで使用していないとエラーになります。
- *
- * @template F 書式文字列の型
- * @template T 解析の基準となる日付時刻の型。返り値の型にもなります。
- * @param input 解析する文字列
- * @param formatString 文字列から変換するための{@link FormatString 書式文字列}
- * @param reference 解析の基準となる日付時刻。
- * @param options 解析時に使用するオプション
- * @param _ 書式文字列の検査のための引数。この引数を指定する必要はありません。
- * @returns 書式にしたがって文字列から変換されたTemporalのインスタンス
- *
- * 書式文字列にタイムゾーンの書式指定子が指定されている場合
- * 入力文字列から解析された日付や時刻の値がそのタイムゾーンで解釈され
- * referenceと同じタイムゾーンに変換したものを返します。
- * @throws 以下の場合に例外が投げられます
- * - 書式文字列に文字列リテラルだけしか指定しなかった
- * - 書式文字列で引用符が閉じられていなかった
- * - 書式文字列で変換対象となるプロパティを持たないインスタンスを指定した
- * - 書式文字列に日時や時刻に変換されるがアルファベットが指定されていない
- * - 書式文字列に`a`(午前・午後)が指定されているのに`h`や`hh`(12時間制の時)が指定されていない
- * - 書式文字列に`h`もしくは`hh`(12時間制の時)が指定されているのに`a`(午前・午後)が指定されていない
- * - 未対応のロケールを指定した
- * - 未対応のoverflow
- * @see {@link format}
- */
-declare function parse<F extends string, T extends _T, _T = ReferenceFor<F>>(input: string, formatString: F, reference: T, options?: ParseOptions, ..._: ValidateFormatString<F, 'parse'>): T | undefined;
-/**
  * 書式文字列は同じアルファベットが1文字以上連続する書式指定子と、リテラル文字列で構成されます。
  *
  * アルファベットをリテラル文字列として使う場合には、引用符(`'`もしくは`"`)で囲んでください。
@@ -382,27 +344,30 @@ declare function parse<F extends string, T extends _T, _T = ReferenceFor<F>>(inp
  *
  * 書式文字列には必ず1つ以上の書式指定子が必要です。
  *
- * 書式指定には`FormatString`の各プロパティ名が指定できます。
+ * 書式指定子には`FormatString`の各プロパティ名が指定できます。
  *
  * `parse`では日付や時刻の書式指定子を指定する必要があります。
  *
  * `parse`では午前午後の書式指定子(`a`)と12時間制の時間の書式指定子(`h`もしくは`hh`)を同時に指定する必要があります。
+ *
+ * `parse`では12時間制の時間の書式指定子(`h`もしくは`hh`)と24時間制の時間の書式指定子(`H`もしくは`HH`)を同時に指定することはできません。
  * @throws
  * 以下の場合にはエラーとなります。
  *
  * - 引用符が閉じられていない
  * - 引用符を単独で使用する
  * - 書式指定子がない
- * - `propertMap`にない書式指定子を使用する
+ * - `FormatString`にない書式指定子を使用する
  * - `parse`で曜日(`E`など)やタイムゾーン(`X`など)だけを指定する
  * - `parse`で午前午後の書式指定子(`a`)を指定して、12時間制の時間の書式指定子(`h`もしくは`hh`)を指定しない
  * - `parse`で12時間制の時間の書式指定子(`h`もしくは`hh`)を指定して、午前午後の書式指定子(`a`)を指定しない
+ * - `parse`で12時間制の時間の書式指定子(`h`もしくは`hh`)と24時間制の時間の書式指定子(`H`もしくは`HH`)が同時に指定されている
  */
 declare const FormatString: {
   /**
    * 下2桁の西暦
    *
-   * parseではreference.yearに最も近い下2桁が一致する年として扱われます。
+   * parseではreference.yearにもっとも近い下2桁が一致する年として扱われます。
    *
    * | `reference.year` | 入力文字列 | 結果   |
    * |-----------------:|:----------:|:------:|
@@ -820,4 +785,61 @@ declare const FormatString: {
    */
   readonly xxx: "offset";
 };
+/**
+ * 解析に使用するオプション
+ */
+interface ParseOptions {
+  /** 解析時に使用するオプション {@link Locale} */
+  locale?: Locale;
+  /**
+   * 範囲外の値の扱いを指定するオプション
+   *
+   * 以下が指定できます。
+   *
+   * - `reject` 範囲外の値が指定されたら受け付けない(`undefined`を返す): デフォルト
+   * - `constrain` 範囲内に収まるように調整して受け付ける
+   *
+   * 上記以外を指定するとエラーになります。
+   */
+  overflow?: 'reject' | 'constrain';
+}
+/**
+ * 指定された書式文字列にしたがって、文字列を日付時刻に変換します。
+ *
+ * 入力文字列が書式文字列にしたがっていない場合はundefinedを返します。
+ *
+ * `E`や`EEEE`はその位置に曜日の表記がないとundefinedを返しますが、日付の解析の際には無視されます。
+ *
+ * たとえば、2023/01/01は日曜日ですが、`'2023-01-01 (Mon)'` は書式文字列 `'yyyy-MM-dd (EEE)'` にしたがっているため、解析結果は`undefined`にはならず、また日付にも影響しないため`2023/1/1`となります。
+ *
+ * 日時や時刻に変換される書式文字列が指定されていないと、つまり曜日やタイムゾーンの書式文字列だけだとエラーになります。
+ *
+ * また`a`(午前・午後)と`h`や`hh`(12時間制の時)はセットで使用していないとエラーになります。
+ *
+ * @template F 書式文字列の型
+ * @template T 解析の基準となる日付時刻の型。返り値の型にもなります。
+ * @param input 解析する文字列
+ * @param formatString 文字列から変換するための{@link FormatString 書式文字列}
+ * @param reference 解析の基準となる日付時刻。
+ * @param options 解析時に使用するオプション
+ * @param _ 書式文字列の検査のための引数。この引数を指定する必要はありません。
+ * @returns 書式にしたがって文字列から変換されたTemporalのインスタンス
+ *
+ * 書式文字列にタイムゾーンの書式指定子が指定されている場合
+ * 入力文字列から解析された日付や時刻の値がそのタイムゾーンで解釈され
+ * referenceと同じタイムゾーンに変換したものを返します。
+ * @throws 以下の場合に例外が投げられます
+ *
+ * - 書式文字列に文字列リテラルだけしか指定しなかった
+ * - 書式文字列で引用符が閉じられていなかった
+ * - 書式文字列で変換対象となるプロパティを持たないインスタンスを指定した
+ * - 書式文字列に日時や時刻に変換されるがアルファベットが指定されていない
+ * - 書式文字列に`a`(午前・午後)が指定されているのに`h`や`hh`(12時間制の時)が指定されていない
+ * - 書式文字列に`h`もしくは`hh`(12時間制の時)が指定されているのに`a`(午前・午後)が指定されていない
+ * - 書式文字列に`h`もしくは`hh`(12時間制の時)と`H`もしくは`HH`(24時間制の時)が同時に指定されている
+ * - 未対応のロケールを指定した
+ * - 未対応のoverflow
+ * @see {@link format}
+ */
+declare function parse<F extends string, T extends _T, _T = ReferenceFor<F>>(input: string, formatString: F, reference: T, options?: ParseOptions, ..._: ValidateFormatString<F, 'parse'>): T | undefined;
 export { type FormatOptions, type FormatString, type Locale, type ParseOptions, format, parse };
