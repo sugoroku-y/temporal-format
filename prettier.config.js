@@ -10,7 +10,7 @@ export default {
     useTabs: false,
     overrides: [
         {
-            files: '*.md',
+            files: ['*.md', 'package.json'],
             options: {
                 tabWidth: 2,
             },
