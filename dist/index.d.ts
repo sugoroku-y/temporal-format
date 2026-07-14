@@ -285,6 +285,7 @@ type ValidateDayPeriodAnd12Hours<R extends ParseResult> = ExtractToken<R> extend
   a_: '午前/午後(a)がある場合、12時間表記(h/hh)も必要です';
   _h: '12時間表記(h/hh)がある場合、午前/午後(a)も必要です';
 }[`${FailoverIfNever<Extract<Token[0], 'a'>, '_'>}${FailoverIfNever<Extract<Token[0], 'h'>, '_'>}`] : never;
+type ValidateNoDuplicateToken<R extends ParseResult> = R extends [infer First, ...infer Rest extends SuccessResult] ? First extends TokenNode ? [Extract<Rest[number], TokenNode<First[0]>>] extends [never] ? ValidateNoDuplicateToken<Rest> : `書式指定子が重複しています: ${Repeat<First[0], First[1]>}` : ValidateNoDuplicateToken<Rest> : never;
 /** 書式文字列の利用目的 */
 type Purpose = 'format' | 'parse';
 /**
@@ -294,7 +295,7 @@ type Purpose = 'format' | 'parse';
  */
 type ValidationMessage<R extends ParseResult, P extends Purpose> = ValidateParsingSuccessfull<R> | ValidateTokenExistence<R> | ValidateTokenSupported<R> | {
   format: never;
-  parse: ValidateDateTimeTokenExistence<R> | ValidateDayPeriodAnd12Hours<R>;
+  parse: ValidateDateTimeTokenExistence<R> | ValidateDayPeriodAnd12Hours<R> | ValidateNoDuplicateToken<R>;
 }[P];
 /**
  * 書式文字列を検証して失敗すればエラーメッセージ付きの空配列を返す型関数
@@ -351,6 +352,8 @@ declare function format<F extends string>(target: TargetFor<F>, formatString: F,
  * `parse`では午前午後の書式指定子(`a`)と12時間制の時間の書式指定子(`h`もしくは`hh`)を同時に指定する必要があります。
  *
  * `parse`では12時間制の時間の書式指定子(`h`もしくは`hh`)と24時間制の時間の書式指定子(`H`もしくは`HH`)を同時に指定することはできません。
+ *
+ * `parse`では同じアルファベットの書式指定子は1箇所だけ指定してください。
  * @throws
  * 以下の場合にはエラーとなります。
  *
@@ -362,6 +365,7 @@ declare function format<F extends string>(target: TargetFor<F>, formatString: F,
  * - `parse`で午前午後の書式指定子(`a`)を指定して、12時間制の時間の書式指定子(`h`もしくは`hh`)を指定しない
  * - `parse`で12時間制の時間の書式指定子(`h`もしくは`hh`)を指定して、午前午後の書式指定子(`a`)を指定しない
  * - `parse`で12時間制の時間の書式指定子(`h`もしくは`hh`)と24時間制の時間の書式指定子(`H`もしくは`HH`)が同時に指定されている
+ * - `parse`で同じアルファベットの書式指定子を複数箇所で指定している
  */
 declare const FormatString: {
   /**
@@ -816,6 +820,7 @@ interface ParseOptions {
  *
  * また`a`(午前・午後)と`h`や`hh`(12時間制の時)はセットで使用していないとエラーになります。
  *
+ * 書式からの解析が不安定になるため同じアルファベットの書式指定子を複数箇所で使用しているとエラーになります。
  * @template F 書式文字列の型
  * @template T 解析の基準となる日付時刻の型。返り値の型にもなります。
  * @param input 解析する文字列
@@ -837,6 +842,7 @@ interface ParseOptions {
  * - 書式文字列に`a`(午前・午後)が指定されているのに`h`や`hh`(12時間制の時)が指定されていない
  * - 書式文字列に`h`もしくは`hh`(12時間制の時)が指定されているのに`a`(午前・午後)が指定されていない
  * - 書式文字列に`h`もしくは`hh`(12時間制の時)と`H`もしくは`HH`(24時間制の時)が同時に指定されている
+ * - 書式文字列に同じアルファベットの書式指定子を複数箇所で使用している
  * - 未対応のロケールを指定した
  * - 未対応のoverflow
  * @see {@link format}

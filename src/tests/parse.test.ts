@@ -91,8 +91,8 @@ describe('parse', () => {
             second: 5,
         });
 
-        const fmt = 'E EE EEE EEEE a yyyy/MM/dd hh:mm';
-        const text = '木 木 木 木曜日 午後 2026/08/06 09:03';
+        const fmt = 'EEEE a yyyy/MM/dd hh:mm';
+        const text = '木曜日 午後 2026/08/06 09:03';
 
         expect(parse(text, fmt, reference, { locale: 'ja-JP' })).toEqual(
             Temporal.PlainDateTime.from({
@@ -261,8 +261,8 @@ describe('parse', () => {
             second: 5,
         });
 
-        const fmt = 'E EEE EEEE yyyy/MM/dd HH:mm';
-        const text = 'Thu Thu Thursday 2026/08/06 21:03';
+        const fmt = 'EEEE yyyy/MM/dd HH:mm';
+        const text = 'Thursday 2026/08/06 21:03';
 
         expect(parse(text, fmt, reference, { locale: 'en-US' })).toEqual(
             Temporal.PlainDateTime.from({
@@ -543,6 +543,10 @@ describe('parse', () => {
             ).toThrow(
                 '12時間表記(h/hh)と24時間表記(H/HH)の両方を指定することはできません',
             );
+            expect(() =>
+                // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
+                parse('', 'yyyy-MM-dd-yy', reference),
+            ).toThrow('書式指定子が重複しています: yyyy: yyyy-MM-dd-yy');
         });
     });
 });

@@ -4,11 +4,12 @@ import type {
     FailureResult,
     ParseFormatString,
     ParseResult,
+    SuccessResult,
     TokenNode,
     TokenNodeToString,
 } from './parseFormatString';
 import type { Expect, It, ToEqual } from './type-test';
-import type { FailoverIfNever, NonNullish } from './types';
+import type { FailoverIfNever, NonNullish, Repeat } from './types';
 
 /** 書式文字列の検証で問題がなかったとき */
 export type ValidationSuccess = [];
@@ -320,6 +321,93 @@ declare const _test_ValidateDayPeriodAnd12Hours: [
     >,
 ];
 
+type ValidateNoDuplicateToken<R extends ParseResult> =
+    // 配列の先頭要素を取得
+    R extends [infer First, ...infer Rest extends SuccessResult]
+        ? // 先頭が書式指定子なら
+          First extends TokenNode
+            ? // 同じ書式指定子がないかチェック
+              [Extract<Rest[number], TokenNode<First[0]>>] extends [never]
+                ? // なければ次の要素
+                  ValidateNoDuplicateToken<Rest>
+                : // あればエラー
+                  `書式指定子が重複しています: ${Repeat<First[0], First[1]>}`
+            : // 文字列リテラルなら次の要素
+              ValidateNoDuplicateToken<Rest>
+        : // 解析失敗の場合は無視
+          never;
+declare const _test_ValidateNoDuplicateToken: [
+    ...It<
+        '1. ValidateNoDuplicateToken',
+        Expect<
+            ValidateNoDuplicateToken<ParseFormatString<'yyyy-MM-dd'>>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '2. ValidateNoDuplicateToken',
+        Expect<
+            ValidateNoDuplicateToken<ParseFormatString<'yyyy-MM-dd-yy'>>,
+            ToEqual<'書式指定子が重複しています: yyyy'>
+        >
+    >,
+    ...It<
+        '1: ValidateNoDuplicateToken: 午前/午後だけ指定されていてもここではnever',
+        Expect<
+            ValidateNoDuplicateToken<ParseFormatString<'a HH:mm'>>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '2: ValidateNoDuplicateToken: 12時間表記だけ指定されていてもここではnever',
+        Expect<
+            ValidateNoDuplicateToken<ParseFormatString<'hh:mm'>>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '2: ValidateNoDuplicateToken: 12時間表記と24時間表記が両方指定されていてもここではnever',
+        Expect<
+            ValidateNoDuplicateToken<ParseFormatString<'a HH:hh:mm'>>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '1. ValidateNoDuplicateToken: 曜日やタイムゾーンだけでもここではnever',
+        Expect<
+            ValidateNoDuplicateToken<ParseFormatString<'EEEE XXX'>>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '3. ValidateNoDuplicateToken: 無効な書式指定子が指定されていてもここではnever',
+        Expect<
+            ValidateNoDuplicateToken<ParseFormatString<'yyy-MM-dd'>>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '4. ValidateNoDuplicateToken: 解析失敗してもここではnever',
+        Expect<
+            ValidateNoDuplicateToken<ParseFormatString<'yyyy"MMdd'>>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '5. ValidateNoDuplicateToken: 解析失敗してもここではnever',
+        Expect<
+            ValidateNoDuplicateToken<ParseFormatString<`'yyyy"MMdd'`>>,
+            ToEqual<never>
+        >
+    >,
+    ...It<
+        '6. ValidateNoDuplicateToken: 書式指定子がなくてもここではnever',
+        Expect<
+            ValidateNoDuplicateToken<ParseFormatString<'"yyyyMMdd"'>>,
+            ToEqual<never>
+        >
+    >,
+];
 /** 書式文字列の利用目的 */
 export type Purpose = 'format' | 'parse';
 
@@ -343,7 +431,9 @@ type ValidationMessage<R extends ParseResult, P extends Purpose> =
               // 日付や時刻の書式指定子を含む
               | ValidateDateTimeTokenExistence<R>
               // 午前午後と12時間制の時間は同時に使用
-              | ValidateDayPeriodAnd12Hours<R>;
+              | ValidateDayPeriodAnd12Hours<R>
+              // 書式指定子が重複していない
+              | ValidateNoDuplicateToken<R>;
       }[P];
 
 declare const _test_ValidationMessage: [
@@ -968,9 +1058,9 @@ declare const _tests_ValidateFormatString: [
     ...It<
         '45. ValidateFormatString for parse: 日付や時刻の書式指定子がありません',
         Expect<
-            ValidateFormatString<`E EE EEE EEEE X XX XXX x xx xxx`, 'parse'>,
+            ValidateFormatString<`EEEE XXX`, 'parse'>,
             ToEqual<
-                ValidationFailure<'日付や時刻の書式指定子がありません: E EE EEE EEEE X XX XXX x xx xxx'>
+                ValidationFailure<'日付や時刻の書式指定子がありません: EEEE XXX'>
             >
         >
     >,
@@ -989,6 +1079,15 @@ declare const _tests_ValidateFormatString: [
             ValidateFormatString<`h`, 'parse'>,
             ToEqual<
                 ValidationFailure<'12時間表記(h/hh)がある場合、午前/午後(a)も必要です: h'>
+            >
+        >
+    >,
+    ...It<
+        '46. ValidateFormatString for parse: ',
+        Expect<
+            ValidateFormatString<`yyyy-MM-dd-yy`, 'parse'>,
+            ToEqual<
+                ValidationFailure<'書式指定子が重複しています: yyyy: yyyy-MM-dd-yy'>
             >
         >
     >,

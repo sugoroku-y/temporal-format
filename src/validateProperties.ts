@@ -9,6 +9,7 @@ import {
 import type { FormatTarget } from './FormatTarget';
 import { isKeyOf } from './isKeyOf';
 import type { SuccessResult } from './parseFormatString';
+import type { Alphabet } from './types';
 import type { Purpose } from './ValidateFormatString';
 
 export function validateProperties(
@@ -22,6 +23,7 @@ export function validateProperties(
     let has12hours = false;
     let has24hours = false;
     let hasTimeZone = false;
+    const alphabetMap: Partial<Record<Alphabet, number[]>> = {};
     for (const node of nodes) {
         if (typeof node === 'string') {
             continue;
@@ -43,6 +45,7 @@ export function validateProperties(
         has12hours ||= char === 'h';
         has24hours ||= char === 'H';
         hasTimeZone ||= char in OFFSET_TOKEN;
+        alphabetMap[char] = [...(alphabetMap[char] ?? []), length];
     }
     if (purpose === 'format') {
         // format向けの検証はここまで
@@ -76,4 +79,11 @@ export function validateProperties(
             `12時間表記(h/hh)がある場合、午前/午後(a)も必要です: ${formatString}`,
         );
     }
+    const found = Object.entries(alphabetMap).find(
+        ([, { length }]) => length > 1,
+    );
+    assert(
+        !found,
+        `書式指定子が重複しています: ${found?.[0].repeat(found[1][0])}: ${formatString}`,
+    );
 }

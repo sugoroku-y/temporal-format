@@ -316,15 +316,18 @@ function m(n) {
 	}
 }
 function h(e, a, o, l) {
-	let u = !1, d = !1, f = !1, p = !1, m = !1;
+	let u = !1, d = !1, f = !1, p = !1, m = !1, h = {};
 	for (let l of e) {
 		if (typeof l == "string") continue;
 		t(i(l), `無効な書式指定子です: ${l[0].repeat(l[1])}: ${o}`);
-		let [e, h] = l;
-		for (let i of r[e].properties) t(n(i, a), `${a.constructor.name}にはプロパティ${i}がありません: ${e.repeat(h)}: ${o}`);
-		u ||= e in s, d ||= e === "a", f ||= e === "h", p ||= e === "H", m ||= e in c;
+		let [e, g] = l;
+		for (let i of r[e].properties) t(n(i, a), `${a.constructor.name}にはプロパティ${i}がありません: ${e.repeat(g)}: ${o}`);
+		u ||= e in s, d ||= e === "a", f ||= e === "h", p ||= e === "H", m ||= e in c, h[e] = [...h[e] ?? [], g];
 	}
-	l !== "format" && (t("with" in a && typeof a.with == "function", `${a.constructor.name}にはメソッドwithがありません`), m && t("withTimeZone" in a && typeof a.withTimeZone == "function", `${a.constructor.name}にはメソッドwithTimeZoneがありません`), t(u, `日付か時刻の書式文字列がありません: ${o}`), d ? (t(f, `午前/午後(a)がある場合、12時間表記(h/hh)も必要です: ${o}`), t(!p, "12時間表記(h/hh)と24時間表記(H/HH)の両方を指定することはできません")) : t(!f, `12時間表記(h/hh)がある場合、午前/午後(a)も必要です: ${o}`));
+	if (l === "format") return;
+	t("with" in a && typeof a.with == "function", `${a.constructor.name}にはメソッドwithがありません`), m && t("withTimeZone" in a && typeof a.withTimeZone == "function", `${a.constructor.name}にはメソッドwithTimeZoneがありません`), t(u, `日付か時刻の書式文字列がありません: ${o}`), d ? (t(f, `午前/午後(a)がある場合、12時間表記(h/hh)も必要です: ${o}`), t(!p, "12時間表記(h/hh)と24時間表記(H/HH)の両方を指定することはできません")) : t(!f, `12時間表記(h/hh)がある場合、午前/午後(a)も必要です: ${o}`);
+	let g = Object.entries(h).find(([, { length: e }]) => e > 1);
+	t(!g, `書式指定子が重複しています: ${g?.[0].repeat(g[1][0])}: ${o}`);
 }
 function g(e, t = 2) {
 	return String(e).padStart(t, "0");
