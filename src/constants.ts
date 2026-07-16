@@ -5,7 +5,13 @@ import type {
     SuccessResult,
     TokenNode,
 } from './parseFormatString';
-import type { AllPropertyNames, Alphabet, UnionToTuple } from './types';
+import type { Expect, It, ToEqual } from './type-test';
+import type {
+    AllPropertyNames,
+    Alphabet,
+    CountOfUnion,
+    UnionToTuple,
+} from './types';
 
 export const FORMAT_TOKEN_MAP = {
     y: { length: [2, 4], properties: ['year'] },
@@ -204,7 +210,21 @@ export const ORDER_PROPERTIES = [
     'millisecond',
     'microsecond',
     'nanosecond',
-] as const satisfies DateTimeProperties[];
+] as const satisfies readonly DateTimeProperties[];
+
+declare const _test_ORDER_PROPERTIES: [
+    ...It<
+        'ORDER_PROPERTIESの要素の型とDateTimePropertiesが一致する(漏れがない)ことを確認',
+        Expect<(typeof ORDER_PROPERTIES)[number], ToEqual<DateTimeProperties>>
+    >,
+    ...It<
+        'ORDER_PROPERTIESの要素数とDateTimePropertiesの数が一致する(重複がない)ことを確認',
+        Expect<
+            (typeof ORDER_PROPERTIES)['length'],
+            ToEqual<CountOfUnion<DateTimeProperties>>
+        >
+    >,
+];
 
 export const DATE_TIME_TOKEN = {
     y: 1,

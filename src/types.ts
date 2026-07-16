@@ -109,3 +109,9 @@ type UnionLast<U> =
 export type UnionToTuple<T, Last = UnionLast<T>> = [T] extends [never]
     ? []
     : [...UnionToTuple<Exclude<T, Last>>, Last];
+
+export type CountOfUnion<T, R extends 1[] = [], U = T> = [T] extends [never]
+    ? R['length']
+    : T extends T
+      ? CountOfUnion<Exclude<U, T>, [...R, 1]>
+      : never;
