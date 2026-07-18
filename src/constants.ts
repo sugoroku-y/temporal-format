@@ -56,6 +56,19 @@ export function isSupportedToken(token: TokenNode): token is StrictTokenNode {
         FORMAT_TOKEN_MAP[token[0]].length.includes(token[1])
     );
 }
+
+/** 特定のプロパティを使う書式指定子のみを抽出する型関数 */
+type FilteredToken<
+    Properties extends
+        FormatTokenMap[keyof FormatTokenMap]['properties'][number],
+> = keyof {
+    [
+        Char in keyof FormatTokenMap as FormatTokenMap[Char]['properties'][number] extends Properties
+            ? Char
+            : never
+    ]: 1;
+};
+
 export const LOCALES = {
     'en-US': {
         month: {
@@ -199,6 +212,7 @@ export type WithValue = Omit<
     | 'month'
 >;
 export type DateTimeProperties = keyof WithValue;
+export type DateTimeToken = FilteredToken<DateTimeProperties>;
 
 export const ORDER_PROPERTIES = [
     'year',
@@ -236,28 +250,13 @@ export const DATE_TIME_TOKEN = {
     m: 1,
     s: 1,
     S: 1,
-} as const satisfies {
-    // DateTimePropertiesがpに含まれる書式指定子を抽出
-    [
-        Char in keyof FormatTokenMap as FormatTokenMap[Char]['properties'][number] extends DateTimeProperties
-            ? Char
-            : never
-    ]: 1;
-};
-export type DateTimeToken = keyof typeof DATE_TIME_TOKEN;
+} as const satisfies Record<DateTimeToken, 1>;
 
+export type OffsetToken = FilteredToken<'offset'>;
 export const OFFSET_TOKEN = {
     x: 1,
     X: 1,
-} as const satisfies {
-    // offsetがpに含まれる書式指定子を抽出
-    [
-        Char in keyof FormatTokenMap as FormatTokenMap[Char]['properties'][number] extends 'offset'
-            ? Char
-            : never
-    ]: 1;
-};
-export type OffsetToken = keyof typeof OFFSET_TOKEN;
+} as const satisfies Record<OffsetToken, 1>;
 
 export const CHAR_2DIGIT = [
     'H',
