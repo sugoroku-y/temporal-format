@@ -3,7 +3,7 @@ import type { TargetFor } from './TargetFor';
 import type { ValidateFormatString } from './ValidateFormatString';
 import { assert } from './asserts';
 import {
-    CHAR_2DIGIT,
+    CHAR_TO_2DIGIT_TOKEN,
     FORMAT_TOKEN_MAP,
     type FormatTokenMap,
     type Locale,
@@ -58,7 +58,7 @@ const formatMap: {
         assert(isKeyOf(monthCode, table));
         return table[monthCode];
     }),
-    ...entry(CHAR_2DIGIT, (d, [char, length]) => {
+    ...entry(CHAR_TO_2DIGIT_TOKEN, (d, [char, length]) => {
         const property = FORMAT_TOKEN_MAP[char].properties[0];
         let value = (d as Record<typeof property, number>)[property];
         if (char === 'h') {

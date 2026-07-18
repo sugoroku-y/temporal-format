@@ -3,7 +3,7 @@ import type { ReferenceFor } from './TargetFor';
 import type { ValidateFormatString } from './ValidateFormatString';
 import { assert } from './asserts';
 import {
-    CHAR_2DIGIT,
+    CHAR_TO_2DIGIT_TOKEN,
     CHAR_TO_PATTERN,
     FORMAT_TOKEN_MAP,
     LOCALES,
@@ -143,7 +143,7 @@ const parseMap = {
             scanWithTable(context, names) ?? error`Month not found`;
         context.result.monthCode = monthCode;
     }),
-    ...entry(CHAR_2DIGIT, (context, [char, length]) => {
+    ...entry(CHAR_TO_2DIGIT_TOKEN, (context, [char, length]) => {
         const re = PATTERNS[CHAR_TO_PATTERN[char]][length];
         const property = FORMAT_TOKEN_MAP[char]['properties'][0];
         const [num] = scanPattern(context, re) ?? error`${property} not found`;

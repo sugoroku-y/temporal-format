@@ -258,7 +258,7 @@ export const OFFSET_TOKEN = {
     X: 1,
 } as const satisfies Record<OffsetToken, 1>;
 
-export const CHAR_2DIGIT = [
+export const CHAR_TO_2DIGIT_TOKEN = [
     'H',
     'd',
     'h',
@@ -278,7 +278,7 @@ export const CHAR_2DIGIT = [
     }
 >;
 
-export type Char2Digit = (typeof CHAR_2DIGIT)[number];
+export type Char2Digit = (typeof CHAR_TO_2DIGIT_TOKEN)[number];
 
 export const PATTERNS = {
     year: {
