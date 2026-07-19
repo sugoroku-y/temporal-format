@@ -8,7 +8,8 @@
   "license": "MIT",
   "files": [
     "dist",
-    "docs"
+    "docs",
+    "images"
   ],
   "scripts": {
     "rolldown": "rolldown -c",
