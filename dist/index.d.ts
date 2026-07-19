@@ -98,6 +98,8 @@ declare const FORMAT_TOKEN_MAP: {
 type FormatTokenMap = typeof FORMAT_TOKEN_MAP;
 type StrictTokenNode = { [Char in keyof FormatTokenMap]: { [Length in FormatTokenMap[Char]['length'][number]]: TokenNode<Char, Length>; }[FormatTokenMap[Char]['length'][number]]; }[keyof FormatTokenMap];
 type IsSupportedToken<Token extends TokenNode> = Token extends StrictTokenNode ? true : false;
+/** 特定のプロパティを使う書式指定子のみを抽出する型関数 */
+type FilteredToken<Properties extends FormatTokenMap[keyof FormatTokenMap]['properties'][number]> = keyof { [Char in keyof FormatTokenMap as FormatTokenMap[Char]['properties'][number] extends Properties ? Char : never]: 1; };
 declare const LOCALES: {
   readonly 'en-US': {
     readonly month: {
@@ -209,18 +211,9 @@ declare const LOCALES: {
  * 上記以外を指定するとエラーになります。
  */
 type Locale = keyof typeof LOCALES;
-declare const DATE_TIME_TOKEN: {
-  readonly y: 1;
-  readonly M: 1;
-  readonly d: 1;
-  readonly a: 1;
-  readonly H: 1;
-  readonly h: 1;
-  readonly m: 1;
-  readonly s: 1;
-  readonly S: 1;
-};
-type DateTimeToken = keyof typeof DATE_TIME_TOKEN;
+type WithValue = Omit<FormatTarget['with'] extends ((_: infer R) => unknown) ? R : never, 'era' | 'eraYear' | 'offset' | 'month'>;
+type DateTimeProperties = keyof WithValue;
+type DateTimeToken = FilteredToken<DateTimeProperties>;
 type RequiredProperties<S extends string> = S extends S ? ParseFormatString<S> extends SuccessResult<infer Parsed> ? FormatTokenMap[Extract<Extract<Parsed, TokenNode>[0], keyof FormatTokenMap>]['properties'][number] : never : never;
 type TargetForSub<Properties extends FormatTokenMap[keyof FormatTokenMap]['properties'][number]> = [Properties] extends [never] ? FormatTarget : Pick<Temporal.ZonedDateTime, Properties>;
 type ReferenceForSub<Properties extends FormatTokenMap[keyof FormatTokenMap]['properties'][number]> = TargetForSub<Properties> & {
