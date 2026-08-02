@@ -1,4 +1,6 @@
 import type { DateTimeToken, IsSupportedToken } from './constants';
+import type { ExpandTemplate } from './expandTemplate';
+import type { messages } from './messages';
 import type {
     ExtractToken,
     FailureResult,
@@ -6,7 +8,6 @@ import type {
     ParseResult,
     SuccessResult,
     TokenNode,
-    TokenNodeToString,
 } from './parseFormatString';
 import type { Expect, It, ToEqual } from './type-test';
 import type { FailoverIfNever, NonNullish, Repeat } from './types';
@@ -63,7 +64,9 @@ declare const _test_ValidateParsingSuccessfull: [
  * @template R ParseFormatStringの返り値
  */
 type ValidateTokenExistence<R extends ParseResult> =
-    ExtractToken<R> extends ['no-token'] ? '書式指定子がありません' : never;
+    ExtractToken<R> extends ['no-token']
+        ? typeof messages.noFormatToken
+        : never;
 
 declare const _test_ValidateTokenExistence: [
     ...It<
@@ -109,12 +112,15 @@ type ValidateTokenSupported<R extends ParseResult> =
             ? // 無効な書式指定子だったら
               IsSupportedToken<Token> extends false
                 ? // メッセージを生成して返す
-                  `無効な書式指定子です: ${TokenNodeToString<Token>}`
+                  ExpandTemplate<
+                      typeof messages.invalidFormatToken,
+                      { token: Repeat<Token[0], Token[1]> }
+                  >
                 : // 有効ならneverを返す
                   never
             : // TokenのUnion展開のためのextendsなのでここには来ない
               never
-        : // 前提条件からここには来ない
+        : // 解析失敗/書式指定子なしの場合は何も返さない
           never;
 
 declare const _test_ValidateTokenSupported: [
@@ -174,10 +180,10 @@ type ValidateDateTimeTokenExistence<R extends ParseResult> =
         ? // 日付や時刻のプロパティだけを抽出し、それが空なら
           [Extract<Token, TokenNode<DateTimeToken>>] extends [never]
             ? // エラーメッセージを返す
-              '日付や時刻の書式指定子がありません'
+              typeof messages.noDateTimeToken
             : // 日付や時刻のプロパティがあればnever
               never
-        : // 前提条件からここには来ない
+        : // 解析失敗/書式指定子なしの場合は何も返さない
           never;
 
 declare const _test_ValidateDateTimeTokenExistence: [
@@ -245,11 +251,11 @@ type ValidateDayPeriodAnd12Hours<R extends ParseResult> =
                   ? // 24時間表記がなければOK
                     never
                   : // あればエラー
-                    '12時間表記(h/hh)と24時間表記(H/HH)の両方を指定することはできません';
+                    typeof messages.dontUseBoth12hoursAnd24Hours;
               // 午前/午後だけ指定されている
-              a_: '午前/午後(a)がある場合、12時間表記(h/hh)も必要です';
+              a_: typeof messages.required12hoursWhenUsingAmPm;
               // 12時間表記だけ指定されている
-              _h: '12時間表記(h/hh)がある場合、午前/午後(a)も必要です';
+              _h: typeof messages.requiredAmPmWhenUsing12hours;
           }[`${
               // aが含まれていれば`'a'`、なければ`'_'`
               FailoverIfNever<Extract<Token[0], 'a'>, '_'>
@@ -257,7 +263,7 @@ type ValidateDayPeriodAnd12Hours<R extends ParseResult> =
               // h/hhが含まれていれば`'h'`、なければ`'_'`
               FailoverIfNever<Extract<Token[0], 'h'>, '_'>
           }`]
-        : // 前提条件からここには来ない
+        : // 解析失敗/書式指定子なしの場合は何も返さない
           never;
 
 declare const _test_ValidateDayPeriodAnd12Hours: [
@@ -331,7 +337,10 @@ type ValidateNoDuplicateToken<R extends ParseResult> =
                 ? // なければ次の要素
                   ValidateNoDuplicateToken<Rest>
                 : // あればエラー
-                  `書式指定子が重複しています: ${Repeat<First[0], First[1]>}`
+                  ExpandTemplate<
+                      typeof messages.duplicateFormatToken,
+                      { token: Repeat<First[0], First[1]> }
+                  >
             : // 文字列リテラルなら次の要素
               ValidateNoDuplicateToken<Rest>
         : // 解析失敗の場合は無視

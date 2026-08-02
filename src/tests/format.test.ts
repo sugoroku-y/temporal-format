@@ -68,7 +68,7 @@ describe('format', () => {
         expect(() =>
             // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
             format('hello', "'hello'"),
-        ).toThrow("書式文字列がありません: 'hello'");
+        ).toThrow("書式指定子がありません: 'hello'");
     });
 
     describe('12 hour', () => {
@@ -172,7 +172,7 @@ describe('format', () => {
             expect(() => {
                 // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 format(d, "'yyyy-MM-dd'");
-            }).toThrow("書式文字列がありません: 'yyyy-MM-dd'");
+            }).toThrow("書式指定子がありません: 'yyyy-MM-dd'");
         });
         it('unsupported locale', () => {
             expect(() =>

@@ -8,14 +8,15 @@ import {
 } from './constants';
 import type { FormatTarget } from './FormatTarget';
 import { isKeyOf } from './isKeyOf';
+import { messageKeys } from './messages';
 import type { SuccessResult } from './parseFormatString';
+import { TemporalFormatError } from './TemporalFormatError';
 import type { Alphabet } from './types';
 import type { Purpose } from './ValidateFormatString';
 
 export function validateProperties(
     nodes: SuccessResult,
     instance: FormatTarget,
-    formatString: string,
     purpose: Purpose,
 ): asserts nodes is ParsedFormatString {
     let hasDateTime = false;
@@ -28,16 +29,27 @@ export function validateProperties(
         if (typeof node === 'string') {
             continue;
         }
+        const token = node[0].repeat(node[1]);
         assert(
             isSupportedToken(node),
-            `無効な書式指定子です: ${node[0].repeat(node[1])}: ${formatString}`,
+            TemporalFormatError,
+            messageKeys.invalidFormatToken,
+            {
+                token,
+            },
         );
         const [char, length] = node;
 
         for (const property of FORMAT_TOKEN_MAP[char].properties) {
             assert(
                 isKeyOf(property, instance),
-                `${instance.constructor.name}にはプロパティ${property}がありません: ${char.repeat(length)}: ${formatString}`,
+                TemporalFormatError,
+                messageKeys.noProperty,
+                {
+                    instance: instance.constructor.name,
+                    property,
+                    token,
+                },
             );
         }
         hasDateTime ||= char in DATE_TIME_TOKEN;
@@ -54,36 +66,41 @@ export function validateProperties(
     // parse向けの検証はメソッドの存在確認、書式指定子の組み合わせ確認
     assert(
         'with' in instance && typeof instance.with === 'function',
-        `${instance.constructor.name}にはメソッドwithがありません`,
+        TemporalFormatError,
+        messageKeys.noMethod,
+        { instance: instance.constructor.name, method: 'with' },
     );
-    if (hasTimeZone) {
-        assert(
-            'withTimeZone' in instance &&
-                typeof instance.withTimeZone === 'function',
-            `${instance.constructor.name}にはメソッドwithTimeZoneがありません`,
-        );
-    }
-    assert(hasDateTime, `日付か時刻の書式文字列がありません: ${formatString}`);
+    assert(
+        !hasTimeZone ||
+            ('withTimeZone' in instance &&
+                typeof instance.withTimeZone === 'function'),
+        TemporalFormatError,
+        messageKeys.noMethod,
+        { instance: instance.constructor.name, method: 'withTimeZone' },
+    );
+    assert(hasDateTime, TemporalFormatError, messageKeys.noDateTimeToken);
     if (hasDayPeriod) {
         assert(
             has12hours,
-            `午前/午後(a)がある場合、12時間表記(h/hh)も必要です: ${formatString}`,
+            TemporalFormatError,
+            messageKeys.required12hoursWhenUsingAmPm,
         );
         assert(
             !has24hours,
-            '12時間表記(h/hh)と24時間表記(H/HH)の両方を指定することはできません',
+            TemporalFormatError,
+            messageKeys.dontUseBoth12hoursAnd24Hours,
         );
     } else {
         assert(
             !has12hours,
-            `12時間表記(h/hh)がある場合、午前/午後(a)も必要です: ${formatString}`,
+            TemporalFormatError,
+            messageKeys.requiredAmPmWhenUsing12hours,
         );
     }
     const found = Object.entries(alphabetMap).find(
         ([, { length }]) => length > 1,
     );
-    assert(
-        !found,
-        `書式指定子が重複しています: ${found?.[0].repeat(found[1][0])}: ${formatString}`,
-    );
+    assert(!found, TemporalFormatError, messageKeys.duplicateFormatToken, {
+        token: found?.[0].repeat(found[1][0]) ?? '',
+    });
 }

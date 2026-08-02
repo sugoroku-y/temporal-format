@@ -40,6 +40,12 @@ declare global {
             ..._: T extends U ? [] : never
         ): boolean;
     }
+
+    namespace NodeJS {
+        interface ProcessEnv {
+            TEMPORAL_FORMAT_LANG: 'ja';
+        }
+    }
 }
 
 export {};

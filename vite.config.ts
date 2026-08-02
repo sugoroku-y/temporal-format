@@ -20,5 +20,8 @@ export default defineConfig({
         coverage: {
             enabled: process.env.npm_config_coverage === 'true',
         },
+        env: {
+            TEMPORAL_FORMAT_LANG: 'ja',
+        },
     },
 });

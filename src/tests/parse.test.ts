@@ -286,7 +286,7 @@ describe('parse', () => {
         expect(() =>
             // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
             parse('hello', "'hello'", reference),
-        ).toThrow("書式文字列がありません: 'hello'");
+        ).toThrow("書式指定子がありません: 'hello'");
     });
     it('unsupported locale', () => {
         const reference = Temporal.Now.zonedDateTimeISO();
@@ -476,7 +476,7 @@ describe('parse', () => {
                 try {
                     expect(parse('X', formatString, reference)).toBeUndefined();
                     expect(spy).toHaveBeenCalledWith(
-                        expect.stringContaining(' not found'),
+                        expect.stringContaining('が見つからない'),
                     );
                 } finally {
                     spy.mockRestore();
@@ -527,7 +527,7 @@ describe('parse', () => {
                 // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 parse('', 'E EEE EEEE X XX XXX x xx xxx', reference),
             ).toThrow(
-                '日付か時刻の書式文字列がありません: E EEE EEEE X XX XXX x xx xxx',
+                '日付や時刻の書式指定子がありません: E EEE EEEE X XX XXX x xx xxx',
             );
             expect(() =>
                 // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする

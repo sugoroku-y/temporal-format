@@ -21,17 +21,17 @@ describe('parseFormatString', () => {
 
     it('throws when a quoted literal is not terminated', () => {
         expect(() => parseFormatString("yyyy-'open")).toThrow(
-            "引用符'が閉じられていません: yyyy-'open",
+            "引用符'が閉じられていません",
         );
     });
 
     it('throws when the format string contains no format tokens', () => {
         expect(() => parseFormatString('123 / -')).toThrow(
-            '書式文字列がありません: 123 / -',
+            '書式指定子がありません',
         );
         // エラーになった書式文字列をもう一度(エラーもキャッシュされていることの確認)
         expect(() => parseFormatString('123 / -')).toThrow(
-            '書式文字列がありません: 123 / -',
+            '書式指定子がありません',
         );
     });
 });

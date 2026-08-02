@@ -1,5 +1,8 @@
 import { assert } from './asserts';
 import { error } from './error';
+import type { ExpandTemplate } from './expandTemplate';
+import { messageKeys, messages } from './messages';
+import { TemporalFormatError } from './TemporalFormatError';
 import type { Expect, It, ToEqual } from './type-test';
 import type { Alphabet, FailoverIfNever, Increment, Repeat } from './types';
 
@@ -126,11 +129,18 @@ type ParseQuotedLiteral<
                   ? // 引用符終了
                     ParseFormatString<Rest, R>
                   : // 開始と違う引用符はエラー
-                    FailureResult<`単独の引用符${First}が使われています`>
+                    FailureResult<
+                        ExpandTemplate<
+                            typeof messages.independentQuote,
+                            { quote: First }
+                        >
+                    >
             : // リテラル文字列に1文字追加して続行
               ParseQuotedLiteral<Rest, Q, AddLiteral<R, First>>
         : // 引用符が来ないのに終了したらエラー
-          FailureResult<`引用符${Q}が閉じられていません`>;
+          FailureResult<
+              ExpandTemplate<typeof messages.unclosedQuote, { quote: Q }>
+          >;
 
 declare const _tests_ParseFormatString: [
     ...It<
@@ -187,7 +197,7 @@ const cache = new Map<string, CacheEntry>();
 export function parseFormatString(formatString: string): SuccessResult {
     const cached = cache.get(formatString);
     if (cached) {
-        return cached.result ?? error`${cached.error}: ${formatString}`;
+        return cached.result ?? error(cached.error);
     }
     try {
         let hasToken = false;
@@ -226,10 +236,19 @@ export function parseFormatString(formatString: string): SuccessResult {
                 continue;
             }
             if (quote) {
-                assert(endQuote, `引用符${quote}が閉じられていません`);
+                assert(
+                    endQuote,
+                    TemporalFormatError,
+                    messageKeys.unclosedQuote,
+                    {
+                        quote,
+                    },
+                );
                 assert(
                     quote === endQuote,
-                    `単独の引用符${endQuote}が使われています`,
+                    TemporalFormatError,
+                    messageKeys.independentQuote,
+                    { quote: endQuote },
                 );
                 addLiteral(content.replace(/(['"])\1/g, '$1'));
                 continue;
@@ -239,14 +258,15 @@ export function parseFormatString(formatString: string): SuccessResult {
         if (lastIndex < formatString.length) {
             addLiteral(formatString.slice(lastIndex));
         }
-        if (!hasToken) {
-            void error`書式文字列がありません`;
-        }
+        assert(hasToken, TemporalFormatError, messageKeys.noFormatToken);
         cache.set(formatString, { result: nodes });
         return nodes;
     } catch (ex) {
-        assert(ex instanceof Error);
+        assert(
+            ex instanceof Error,
+            'eslintの設定でthrowされるものはError派生のはず',
+        );
         cache.set(formatString, { error: ex.message });
-        error(`${ex.message}: ${formatString}`);
+        throw ex;
     }
 }

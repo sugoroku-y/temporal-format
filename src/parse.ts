@@ -1,5 +1,6 @@
 import type { FormatTarget } from './FormatTarget';
 import type { ReferenceFor } from './TargetFor';
+import { TemporalFormatError } from './TemporalFormatError';
 import type { ValidateFormatString } from './ValidateFormatString';
 import { assert } from './asserts';
 import {
@@ -17,9 +18,9 @@ import {
 import { entry as entryBase } from './entry';
 import { error } from './error';
 import { isKeyOf } from './isKeyOf';
-import { parseFormatString } from './parseFormatString';
+import { messageKeys } from './messages';
+import { parseAndValidate } from './parseAndValidate';
 import type { UnionToIntersection } from './types';
-import { validateProperties } from './validateProperties';
 
 interface ParseContext {
     readonly input: string;
@@ -62,7 +63,8 @@ function scanLiteral(context: ParseContext, literal: string) {
 function scanPattern(context: ParseContext, pattern: RegExp) {
     assert(
         pattern.global && pattern.sticky,
-        `パターンにはgとyのフラグを指定してください: ${pattern}`,
+        // v8 ignore next
+        () => `パターンにはgとyのフラグを指定してください: ${pattern}`,
     );
     pattern.lastIndex = context.index;
     const match = pattern.exec(context.input);
@@ -120,45 +122,50 @@ const parseMap = {
     ...entry('y', (context, [, length]) => {
         const [yearString] =
             scanPattern(context, PATTERNS.year[length]) ??
-            error`Year not found`;
+            error`年が見つからない`;
         const year = parseInt(yearString, 10);
         if (length === 4) {
             context.result.year = year;
             return;
         }
-        assert(context.referenceYear !== undefined);
+        assert(
+            context.referenceYear !== undefined,
+            'yearを使う書式指定子が使われているならreferenceがyearプロパティを持っているはず',
+        );
         context.result.year = adjustYear(context.referenceYear, year);
     }),
     ...entry('M', (context, [, length]) => {
         if (length === 1 || length === 2) {
             const [month] =
                 scanPattern(context, PATTERNS.month[length]) ??
-                error`Month not found`;
+                error`月が見つからない`;
             context.result.monthCode = `M${month.padStart(2, '0')}`;
             return;
         }
         const type = length === 3 ? 'short' : 'long';
         const names = LOCALES[context.locale].month[type];
         const [monthCode] =
-            scanWithTable(context, names) ?? error`Month not found`;
+            scanWithTable(context, names) ?? error`月が見つからない`;
         context.result.monthCode = monthCode;
     }),
     ...entry(CHAR_TO_2DIGIT_TOKEN, (context, [char, length]) => {
         const re = PATTERNS[CHAR_TO_PATTERN[char]][length];
         const property = FORMAT_TOKEN_MAP[char]['properties'][0];
-        const [num] = scanPattern(context, re) ?? error`${property} not found`;
+        const [num] =
+            scanPattern(context, re) ??
+            error`${property}プロパティが見つからない`;
         context.result[property] = parseInt(num, 10);
     }),
     ...entry('a', context => {
         const [index] =
             scanWithTable(context, LOCALES[context.locale].dayPeriod.amPm) ??
-            error`Day period not found`;
+            error`午前午後が見つからない`;
         context.isPm = index === 1;
     }),
     ...entry('S', (context, [, length]) => {
         const [match] =
             scanPattern(context, PATTERNS.fractionSecond[length]) ??
-            error`Fractional second not found`;
+            error`秒の小数部が見つからない`;
         context.result.millisecond = parseInt(
             match.slice(0, 3).padEnd(3, '0'),
             10,
@@ -175,7 +182,7 @@ const parseMap = {
     ...entry('E', (context, [, length]) => {
         const type = length === 4 ? 'long' : 'short';
         if (!scanWithTable(context, LOCALES[context.locale].dayOfWeek[type])) {
-            void error`Day of week not found`;
+            void error`曜日が見つからない`;
         }
         // 曜日は解析の結果には含めないので、context.resultは更新しない
     }),
@@ -186,7 +193,7 @@ const parseMap = {
         }
         [context.offset] =
             scanPattern(context, PATTERNS.offset[length]) ??
-            error`Time zone not found`;
+            error`タイムゾーンが見つからない`;
     }),
 } as const satisfies {
     [Char in keyof FormatTokenMap]: ParseFunction<Char>;
@@ -224,7 +231,7 @@ function parseInput(context: ParseContext, nodes: ParsedFormatString) {
             // リテラル文字列は文字列が一致するかどうかだけ
             assert(
                 scanLiteral(context, node),
-                `一致しないリテラル文字列: ${node}`,
+                () => `一致しないリテラル文字列: ${node}`,
             );
             continue;
         }
@@ -238,7 +245,7 @@ function parseInput(context: ParseContext, nodes: ParsedFormatString) {
     }
     assert(
         context.index === context.input.length,
-        `余分な文字列があります: ${context.input.slice(context.index)}`,
+        () => `余分な文字列があります: ${context.input.slice(context.index)}`,
     );
 
     if (context.isPm !== undefined) {
@@ -324,20 +331,34 @@ export function parse(
     reference: EnableNonExistPropertyAccessing<FormatTarget>,
     { locale = 'en-US', overflow = 'reject' }: ParseOptions = {},
 ): FormatTarget | undefined {
-    assert(isKeyOf(locale, LOCALES), `サポートしていないロケール: ${locale}`);
+    assert(
+        isKeyOf(locale, LOCALES),
+        TemporalFormatError,
+        messageKeys.unsupportedLocale,
+        {
+            locale,
+        },
+    );
     assert(
         overflow === 'constrain' || overflow === 'reject',
-        `サポートしていないオーバーフローの挙動: ${overflow}`,
+        TemporalFormatError,
+        messageKeys.unsupportedOverflow,
+        { overflow },
     );
     assert(
         reference.calendarId === undefined ||
             reference.calendarId === 'iso8601',
-        `対応していないカレンダーです: ${reference.calendarId}`,
+        TemporalFormatError,
+        messageKeys.unsupportedCalendarId,
+        {
+            calendarId:
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- 使用されるときにはtarget.calendarIdは非NULLなので問題ない
+                reference.calendarId!,
+        },
     );
 
     // 書式文字列を解析
-    const nodes = parseFormatString(formatString);
-    validateProperties(nodes, reference, formatString, 'parse');
+    const nodes = parseAndValidate(formatString, reference, 'parse');
 
     const context: ParseContext = {
         input,
@@ -364,7 +385,10 @@ export function parse(
             return reference.with(context.result, { overflow });
         }
     } catch (ex) {
-        assert(ex instanceof Error);
+        assert(
+            ex instanceof Error,
+            'eslintの設定でthrowされるものはError派生のはず',
+        );
         console.log(
             `${context.input}\n${' '.repeat(context.index)}^\n${ex.stack}`,
         );

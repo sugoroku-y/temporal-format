@@ -6,12 +6,7 @@ import type {
     TokenNode,
 } from './parseFormatString';
 import type { Expect, It, ToEqual } from './type-test';
-import type {
-    AllPropertyNames,
-    Alphabet,
-    CountOfUnion,
-    UnionToTuple,
-} from './types';
+import type { AllPropertyNames, Alphabet, CountOfUnion } from './types';
 
 export const FORMAT_TOKEN_MAP = {
     y: { length: [2, 4], properties: ['year'] },
@@ -264,19 +259,17 @@ export const CHAR_TO_2DIGIT_TOKEN = [
     'h',
     'm',
     's',
-] as const satisfies UnionToTuple<
-    keyof {
-        [
-            Char in keyof FormatTokenMap as FormatTokenMap[Char] extends {
-                // lengthが1,2でpropertiesが一つだけのものに絞り込む
-                length: [1, 2];
-                properties: [string];
-            }
-                ? Char
-                : never
-        ]: 1;
-    }
->;
+] as const satisfies (keyof {
+    [
+        Char in keyof FormatTokenMap as FormatTokenMap[Char] extends {
+            // lengthが1,2でpropertiesが一つだけのものに絞り込む
+            length: [1, 2];
+            properties: [string];
+        }
+            ? Char
+            : never
+    ]: 1;
+})[];
 
 export type Char2Digit = (typeof CHAR_TO_2DIGIT_TOKEN)[number];
 
