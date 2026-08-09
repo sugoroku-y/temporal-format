@@ -33,7 +33,7 @@ type FormatFunction<Char extends keyof FormatTokenMap> = UnionToIntersection<
 >;
 
 const entry: <Char extends keyof FormatTokenMap>(
-    chars: Char | Char[],
+    chars: Char | readonly Char[],
     func: FormatFunction<Char>,
 ) => Record<Char, FormatFunction<Char>> = entryBase;
 

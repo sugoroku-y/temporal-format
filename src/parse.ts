@@ -114,7 +114,7 @@ type ParseFunction<Char extends keyof FormatTokenMap> = UnionToIntersection<
 >;
 
 const entry: <Char extends keyof FormatTokenMap>(
-    chars: Char | Char[],
+    chars: Char | readonly Char[],
     func: ParseFunction<Char>,
 ) => Record<Char, ParseFunction<Char>> = entryBase;
 

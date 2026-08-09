@@ -253,13 +253,7 @@ export const OFFSET_TOKEN = {
     X: 1,
 } as const satisfies Record<OffsetToken, 1>;
 
-export const CHAR_TO_2DIGIT_TOKEN = [
-    'H',
-    'd',
-    'h',
-    'm',
-    's',
-] as const satisfies (keyof {
+export type Char2Digit = keyof {
     [
         Char in keyof FormatTokenMap as FormatTokenMap[Char] extends {
             // lengthが1,2でpropertiesが一つだけのものに絞り込む
@@ -269,9 +263,27 @@ export const CHAR_TO_2DIGIT_TOKEN = [
             ? Char
             : never
     ]: 1;
-})[];
-
-export type Char2Digit = (typeof CHAR_TO_2DIGIT_TOKEN)[number];
+};
+export const CHAR_TO_2DIGIT_TOKEN = [
+    'H',
+    'd',
+    'h',
+    'm',
+    's',
+] as const satisfies readonly Char2Digit[];
+declare const _test_CHAR_TO_2DIGIT_TOKEN: [
+    ...It<
+        '網羅していることを確認',
+        Expect<(typeof CHAR_TO_2DIGIT_TOKEN)[number], ToEqual<Char2Digit>>
+    >,
+    ...It<
+        '重複していないことを確認',
+        Expect<
+            typeof CHAR_TO_2DIGIT_TOKEN.length,
+            ToEqual<CountOfUnion<Char2Digit>>
+        >
+    >,
+];
 
 export const PATTERNS = {
     year: {

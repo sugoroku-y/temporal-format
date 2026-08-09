@@ -1,5 +1,5 @@
 export function entry<Key extends PropertyKey, Value>(
-    keys: Key | Key[],
+    keys: Key | readonly Key[],
     value: Value,
 ) {
     const result = {};
