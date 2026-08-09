@@ -34,19 +34,19 @@ var t = process.env.TEMPORAL_FORMAT_LANG === "ja" ? {
 	dontUseBoth12hoursAnd24Hours: "You cannot specify both 12-hour token (h/hh) and 24-hour token (H/HH)",
 	requiredAmPmWhenUsing12hours: "When using 12-hour token (h/hh), AM/PM token (a) is also required",
 	duplicateFormatToken: "Duplicate format token: ${token}"
-}, n = Object.fromEntries(Object.keys(t).map((e) => [e, e])), r = class n extends Error {
+}, n = Object.fromEntries(Object.keys(t).map((e) => [e, e])), r = class extends Error {
 	name = "TemporalFormatError";
 	constructor(n, r = {}) {
 		super(e(t[n], r));
 	}
-	static thrown(...e) {
-		throw new n(...e);
-	}
 };
-function i(e, t) {
+function i(...e) {
+	throw new r(...e);
+}
+function a(e, t) {
 	return e in t;
 }
-var a = {
+var o = {
 	y: {
 		length: [2, 4],
 		properties: ["year"]
@@ -128,10 +128,10 @@ var a = {
 		properties: ["offset"]
 	}
 };
-function o(e) {
-	return i(e[0], a) && a[e[0]].length.includes(e[1]);
+function s(e) {
+	return a(e[0], o) && o[e[0]].length.includes(e[1]);
 }
-var s = {
+var c = {
 	"en-US": {
 		month: {
 			short: {
@@ -238,7 +238,7 @@ var s = {
 		},
 		dayPeriod: { amPm: ["午前", "午後"] }
 	}
-}, c = [
+}, l = [
 	"year",
 	"monthCode",
 	"day",
@@ -248,7 +248,7 @@ var s = {
 	"millisecond",
 	"microsecond",
 	"nanosecond"
-], l = {
+], u = {
 	y: 1,
 	M: 1,
 	d: 1,
@@ -258,16 +258,16 @@ var s = {
 	m: 1,
 	s: 1,
 	S: 1
-}, u = {
+}, d = {
 	x: 1,
 	X: 1
-}, d = [
+}, f = [
 	"H",
 	"d",
 	"h",
 	"m",
 	"s"
-], f = {
+], p = {
 	year: {
 		2: /\d{2}/gy,
 		4: /\d{4}/gy
@@ -312,188 +312,188 @@ var s = {
 		2: /[+-]\d{4}/gy,
 		3: /[+-]\d{2}:\d{2}/gy
 	}
-}, p = {
+}, m = {
 	d: "dayOfMonth",
 	H: "hour24",
 	h: "hour12",
 	m: "minute",
 	s: "second"
 };
-function m(e, t) {
+function h(e, t) {
 	let n = {};
 	for (let r of Array.isArray(e) ? e : [e]) Object.assign(n, { [r]: t });
 	return n;
 }
-function h(e, t) {
+function g(e, t) {
 	if (!e) throw Error(typeof t == "function" ? t() : t ?? "Assertion Failure");
 }
-function g(...e) {
+function _(...e) {
 	let t, n, r = Array.isArray(e[0]) ? e[0].reduce((r, i, a) => {
 		let o = e[a];
 		return o instanceof Error && (t = o, o = t.message), typeof o == "function" && (n = o, o = ""), `${r}${o}${i}`;
 	}) : e[0], i = Error(r, { cause: t });
-	throw Error.captureStackTrace(i, n ?? g), i;
+	throw Error.captureStackTrace(i, n ?? _), i;
 }
-var _ = /* @__PURE__ */ new Map();
-function v(e) {
-	let t = _.get(e);
-	if (t) return t.result ?? g(t.error);
+var v = /* @__PURE__ */ new Map();
+function y(e) {
+	let t = v.get(e);
+	if (t) return t.result ?? _(t.error);
 	try {
-		let t = !1, i = [], a = (e) => {
-			i.push(e), t = !0;
+		let t = !1, r = [], a = (e) => {
+			r.push(e), t = !0;
 		}, o = (e) => {
-			i.length > 0 && typeof i[i.length - 1] == "string" ? i[i.length - 1] += e : i.push(e);
+			r.length > 0 && typeof r[r.length - 1] == "string" ? r[r.length - 1] += e : r.push(e);
 		}, s = 0;
-		for (let { index: t, 0: i, 1: c, 2: l, 3: u, 4: d } of e.matchAll(/([A-Za-z])\1*|(['"])([^'"]*(?:(?:''|"")[^'"]*)*)(['"]|$)/g)) {
-			if (s < t && o(e.slice(s, t)), s = t + i.length, i === "''" || i === "\"\"") {
-				o(i.charAt(0));
+		for (let { index: t, 0: r, 1: c, 2: l, 3: u, 4: d } of e.matchAll(/([A-Za-z])\1*|(['"])([^'"]*(?:(?:''|"")[^'"]*)*)(['"]|$)/g)) {
+			if (s < t && o(e.slice(s, t)), s = t + r.length, r === "''" || r === "\"\"") {
+				o(r.charAt(0));
 				continue;
 			}
 			if (l) {
-				d || r.thrown(n.unclosedQuote, { quote: l }), l !== d && r.thrown(n.independentQuote, { quote: d }), o(u.replace(/(['"])\1/g, "$1"));
+				d || i(n.unclosedQuote, { quote: l }), l !== d && i(n.independentQuote, { quote: d }), o(u.replace(/(['"])\1/g, "$1"));
 				continue;
 			}
-			a([c, i.length]);
+			a([c, r.length]);
 		}
-		return s < e.length && o(e.slice(s)), t || r.thrown(n.noFormatToken), _.set(e, { result: i }), i;
+		return s < e.length && o(e.slice(s)), t || i(n.noFormatToken), v.set(e, { result: r }), r;
 	} catch (t) {
-		throw h(t instanceof Error, "eslintの設定でthrowされるものはError派生のはず"), _.set(e, { error: t.message }), t;
+		throw g(t instanceof Error, "eslintの設定でthrowされるものはError派生のはず"), v.set(e, { error: t.message }), t;
 	}
 }
-function y(e, t, s) {
-	let c = !1, d = !1, f = !1, p = !1, m = !1, h = {};
-	for (let s of e) {
-		if (typeof s == "string") continue;
-		let e = s[0].repeat(s[1]);
-		o(s) || r.thrown(n.invalidFormatToken, { token: e });
-		let [g, _] = s;
-		for (let o of a[g].properties) i(o, t) || r.thrown(n.noProperty, {
+function b(e, t, r) {
+	let c = !1, l = !1, f = !1, p = !1, m = !1, h = {};
+	for (let r of e) {
+		if (typeof r == "string") continue;
+		let e = r[0].repeat(r[1]);
+		s(r) || i(n.invalidFormatToken, { token: e });
+		let [g, _] = r;
+		for (let r of o[g].properties) a(r, t) || i(n.noProperty, {
 			instance: t.constructor.name,
-			property: o,
+			property: r,
 			token: e
 		});
-		c ||= g in l, d ||= g === "a", f ||= g === "h", p ||= g === "H", m ||= g in u, h[g] = [...h[g] ?? [], _];
+		c ||= g in u, l ||= g === "a", f ||= g === "h", p ||= g === "H", m ||= g in d, h[g] = [...h[g] ?? [], _];
 	}
-	if (s === "format") return;
-	"with" in t && typeof t.with == "function" || r.thrown(n.noMethod, {
+	if (r === "format") return;
+	"with" in t && typeof t.with == "function" || i(n.noMethod, {
 		instance: t.constructor.name,
 		method: "with"
-	}), m && !("withTimeZone" in t && typeof t.withTimeZone == "function") && r.thrown(n.noMethod, {
+	}), m && !("withTimeZone" in t && typeof t.withTimeZone == "function") && i(n.noMethod, {
 		instance: t.constructor.name,
 		method: "withTimeZone"
-	}), c || r.thrown(n.noDateTimeToken), d ? (f || r.thrown(n.required12hoursWhenUsingAmPm), p && r.thrown(n.dontUseBoth12hoursAnd24Hours)) : f && r.thrown(n.requiredAmPmWhenUsing12hours);
+	}), c || i(n.noDateTimeToken), l ? (f || i(n.required12hoursWhenUsingAmPm), p && i(n.dontUseBoth12hoursAnd24Hours)) : f && i(n.requiredAmPmWhenUsing12hours);
 	let g = Object.entries(h).find(([, { length: e }]) => e > 1);
-	g && r.thrown(n.duplicateFormatToken, { token: g[0].repeat(g[1][0]) });
+	g && i(n.duplicateFormatToken, { token: g[0].repeat(g[1][0]) });
 }
-function b(e, t, n) {
+function x(e, t, n) {
 	try {
-		let r = v(e);
-		return y(r, t, n), r;
+		let r = y(e);
+		return b(r, t, n), r;
 	} catch (t) {
-		h(t instanceof Error, "eslintの設定でthrowされるものはError派生のはず");
+		g(t instanceof Error, "eslintの設定でthrowされるものはError派生のはず");
 		let n = /* @__PURE__ */ Error(`${t}: ${e}`);
 		throw n.stack = t.stack, n;
 	}
 }
-function x(e, t = 2) {
+function S(e, t = 2) {
 	return String(e).padStart(t, "0");
 }
-var S = m, C = {
-	...S("y", ({ year: e }, [, t]) => t === 2 ? x(e % 100) : String(e)),
-	...S("M", ({ monthCode: e }, [, t], { locale: a }) => {
-		if (t === 1 || t === 2) return x(Number(/^M(0[1-9]|1[0-2])$/.exec(e)?.[1] ?? r.thrown(n.invalidMonthCode, { monthCode: e })), t);
-		let o = t === 3 ? "short" : "long", c = s[a].month[o];
-		return i(e, c) ? c[e] : r.thrown(n.invalidMonthCode, { monthCode: e });
+var C = h, w = {
+	...C("y", ({ year: e }, [, t]) => t === 2 ? S(e % 100) : String(e)),
+	...C("M", ({ monthCode: e }, [, t], { locale: r }) => {
+		if (t === 1 || t === 2) return S(Number(/^M(0[1-9]|1[0-2])$/.exec(e)?.[1] ?? i(n.invalidMonthCode, { monthCode: e })), t);
+		let o = t === 3 ? "short" : "long", s = c[r].month[o];
+		return a(e, s) ? s[e] : i(n.invalidMonthCode, { monthCode: e });
 	}),
-	...S(d, (e, [t, n]) => {
-		let r = e[a[t].properties[0]];
-		return t === "h" && (r = (r + 11) % 12 + 1), n === 1 ? String(r) : x(r);
+	...C(f, (e, [t, n]) => {
+		let r = e[o[t].properties[0]];
+		return t === "h" && (r = (r + 11) % 12 + 1), n === 1 ? String(r) : S(r);
 	}),
-	...S("E", ({ dayOfWeek: e }, [, t], { locale: n }) => s[n].dayOfWeek[t === 4 ? "long" : "short"][e - 1]),
-	...S("a", ({ hour: e }, t, { locale: n }) => s[n].dayPeriod.amPm[Math.floor(e / 12)]),
-	...S("S", (e, [, t]) => `${x(e.millisecond, 3)}${t > 3 ? x(e.microsecond, 3) : ""}${t > 6 ? x(e.nanosecond, 3) : ""}`.slice(0, t)),
-	...S(["X", "x"], ({ offset: e }, [t, n]) => t === "X" && e === "+00:00" ? "Z" : e.replace({
+	...C("E", ({ dayOfWeek: e }, [, t], { locale: n }) => c[n].dayOfWeek[t === 4 ? "long" : "short"][e - 1]),
+	...C("a", ({ hour: e }, t, { locale: n }) => c[n].dayPeriod.amPm[Math.floor(e / 12)]),
+	...C("S", (e, [, t]) => `${S(e.millisecond, 3)}${t > 3 ? S(e.microsecond, 3) : ""}${t > 6 ? S(e.nanosecond, 3) : ""}`.slice(0, t)),
+	...C(["X", "x"], ({ offset: e }, [t, n]) => t === "X" && e === "+00:00" ? "Z" : e.replace({
 		1: /:(?:00)?/,
 		2: /:/,
 		3: /^/
 	}[n], ""))
 };
-function w(e, t, { locale: a = "en-US" } = {}) {
-	i(a, s) || r.thrown(n.unsupportedLocale, { locale: a }), e.calendarId !== void 0 && e.calendarId !== "iso8601" && r.thrown(n.unsupportedCalendarId, { calendarId: e.calendarId });
-	let o = { locale: a }, c = b(t, e, "format"), l = [];
-	for (let t of c) {
+function T(e, t, { locale: r = "en-US" } = {}) {
+	a(r, c) || i(n.unsupportedLocale, { locale: r }), e.calendarId !== void 0 && e.calendarId !== "iso8601" && i(n.unsupportedCalendarId, { calendarId: e.calendarId });
+	let o = { locale: r }, s = x(t, e, "format"), l = [];
+	for (let t of s) {
 		if (typeof t == "string") {
 			l.push(t);
 			continue;
 		}
-		let [n] = t, r = C[n];
+		let [n] = t, r = w[n];
 		l.push(r(e, t, o));
 	}
 	return l.join("");
 }
-function T(...e) {
+function E(...e) {
 	return () => e[0].reduce((t, n, r) => `${t}${String(e[r])}${n}`);
 }
-function E(e, t) {
+function D(e, t) {
 	return e.input.startsWith(t, e.index) ? (e.index += t.length, !0) : !1;
 }
-function D(e, t) {
-	h(t.global && t.sticky, T`scanPatternに指定するパターンにはgとyのフラグを指定すること: ${t}`), t.lastIndex = e.index;
+function O(e, t) {
+	g(t.global && t.sticky, E`scanPatternに指定するパターンにはgとyのフラグを指定すること: ${t}`), t.lastIndex = e.index;
 	let n = t.exec(e.input);
 	return n ? (e.index += n[0].length, n) : null;
 }
-function O(e, t) {
-	for (let [n, r] of Array.isArray(t) ? t.entries() : Object.entries(t)) if (E(e, r)) return [n, r];
-}
 function k(e, t) {
+	for (let [n, r] of Array.isArray(t) ? t.entries() : Object.entries(t)) if (D(e, r)) return [n, r];
+}
+function A(e, t) {
 	let n = e + 50;
 	return t + (Math.floor(n / 100) - (t < n % 100 ? 0 : 1)) * 100;
 }
-var A = m, j = {
-	...A("y", (e, [, t]) => {
-		let [n] = D(e, f.year[t]) ?? g`年が見つからない`, r = parseInt(n, 10);
+var j = h, M = {
+	...j("y", (e, [, t]) => {
+		let [n] = O(e, p.year[t]) ?? _`年が見つからない`, r = parseInt(n, 10);
 		if (t === 4) {
 			e.result.year = r;
 			return;
 		}
-		h(e.referenceYear != null, "yearを使う書式指定子が使われているならreferenceがyearプロパティを持っているはず"), e.result.year = k(e.referenceYear, r);
+		g(e.referenceYear != null, "yearを使う書式指定子が使われているならreferenceがyearプロパティを持っているはず"), e.result.year = A(e.referenceYear, r);
 	}),
-	...A("M", (e, [, t]) => {
+	...j("M", (e, [, t]) => {
 		if (t === 1 || t === 2) {
-			let [n] = D(e, f.month[t]) ?? g`月が見つからない`;
+			let [n] = O(e, p.month[t]) ?? _`月が見つからない`;
 			e.result.monthCode = `M${n.padStart(2, "0")}`;
 			return;
 		}
-		let n = t === 3 ? "short" : "long", r = s[e.locale].month[n], [i] = O(e, r) ?? g`月が見つからない`;
+		let n = t === 3 ? "short" : "long", r = c[e.locale].month[n], [i] = k(e, r) ?? _`月が見つからない`;
 		e.result.monthCode = i;
 	}),
-	...A(d, (e, [t, n]) => {
-		let r = f[p[t]][n], i = a[t].properties[0], [o] = D(e, r) ?? g`${i}プロパティが見つからない`;
-		e.result[i] = parseInt(o, 10);
+	...j(f, (e, [t, n]) => {
+		let r = p[m[t]][n], i = o[t].properties[0], [a] = O(e, r) ?? _`${i}プロパティが見つからない`;
+		e.result[i] = parseInt(a, 10);
 	}),
-	...A("a", (e) => {
-		let [t] = O(e, s[e.locale].dayPeriod.amPm) ?? g`午前午後が見つからない`;
+	...j("a", (e) => {
+		let [t] = k(e, c[e.locale].dayPeriod.amPm) ?? _`午前午後が見つからない`;
 		e.isPm = t === 1;
 	}),
-	...A("S", (e, [, t]) => {
-		let [n] = D(e, f.fractionSecond[t]) ?? g`秒の小数部が見つからない`;
+	...j("S", (e, [, t]) => {
+		let [n] = O(e, p.fractionSecond[t]) ?? _`秒の小数部が見つからない`;
 		e.result.millisecond = parseInt(n.slice(0, 3).padEnd(3, "0"), 10), e.result.microsecond = n.length > 3 ? parseInt(n.slice(3, 6).padEnd(3, "0"), 10) : 0, e.result.nanosecond = n.length > 6 ? parseInt(n.slice(6, 9).padEnd(3, "0"), 10) : 0;
 	}),
-	...A("E", (e, [, t]) => {
+	...j("E", (e, [, t]) => {
 		let n = t === 4 ? "long" : "short";
-		O(e, s[e.locale].dayOfWeek[n]) || g`曜日が見つからない`;
+		k(e, c[e.locale].dayOfWeek[n]) || _`曜日が見つからない`;
 	}),
-	...A(["X", "x"], (e, [t, n]) => {
-		if (t === "X" && E(e, "Z")) {
+	...j(["X", "x"], (e, [t, n]) => {
+		if (t === "X" && D(e, "Z")) {
 			e.offset = "+00:00";
 			return;
 		}
-		[e.offset] = D(e, f.offset[n]) ?? g`タイムゾーンが見つからない`;
+		[e.offset] = O(e, p.offset[n]) ?? _`タイムゾーンが見つからない`;
 	})
 };
-function M({ result: e }) {
+function N({ result: e }) {
 	let t = !1;
-	for (let n of c) {
+	for (let n of l) {
 		if (n in e) {
 			t ||= !0;
 			continue;
@@ -507,35 +507,35 @@ function M({ result: e }) {
 		}
 	}
 }
-function N(e, t) {
+function P(e, t) {
 	for (let n of t) {
 		if (typeof n == "string") {
-			E(e, n) || g`一致しないリテラル文字列: ${n}`;
+			D(e, n) || _`一致しないリテラル文字列: ${n}`;
 			continue;
 		}
-		let [t] = n, r = j[t];
+		let [t] = n, r = M[t];
 		r(e, n);
 	}
-	if (e.index < e.input.length && g`余分な文字列があります: ${e.input.slice(e.index)}`, e.isPm !== void 0) {
+	if (e.index < e.input.length && _`余分な文字列があります: ${e.input.slice(e.index)}`, e.isPm !== void 0) {
 		let t = e.result.hour;
-		h(t !== void 0, "書式チェックにより、午前午後が指定されていれば時間も指定されているはず"), t === 12 ? e.isPm || (e.result.hour = 0) : e.isPm && (e.result.hour = t + 12);
+		g(t !== void 0, "書式チェックにより、午前午後が指定されていれば時間も指定されているはず"), t === 12 ? e.isPm || (e.result.hour = 0) : e.isPm && (e.result.hour = t + 12);
 	}
-	M(e);
+	N(e);
 }
-function P(e, t, a, { locale: o = "en-US", overflow: c = "reject" } = {}) {
-	i(o, s) || r.thrown(n.unsupportedLocale, { locale: o }), c !== "constrain" && c !== "reject" && r.thrown(n.unsupportedOverflow, { overflow: c }), a.calendarId !== void 0 && a.calendarId !== "iso8601" && r.thrown(n.unsupportedCalendarId, { calendarId: a.calendarId });
-	let l = b(t, a, "parse"), u = {
+function F(e, t, r, { locale: o = "en-US", overflow: s = "reject" } = {}) {
+	a(o, c) || i(n.unsupportedLocale, { locale: o }), s !== "constrain" && s !== "reject" && i(n.unsupportedOverflow, { overflow: s }), r.calendarId !== void 0 && r.calendarId !== "iso8601" && i(n.unsupportedCalendarId, { calendarId: r.calendarId });
+	let l = x(t, r, "parse"), u = {
 		input: e,
 		index: 0,
 		locale: o,
 		result: {},
-		referenceYear: a.year
+		referenceYear: r.year
 	};
 	try {
-		return N(u, l), u.offset === void 0 ? a.with(u.result, { overflow: c }) : a.withTimeZone?.(u.offset).with(u.result, { overflow: c }).withTimeZone(a);
+		return P(u, l), u.offset === void 0 ? r.with(u.result, { overflow: s }) : r.withTimeZone?.(u.offset).with(u.result, { overflow: s }).withTimeZone(r);
 	} catch (e) {
-		h(e instanceof Error, "eslintの設定でthrowされるものはError派生のはず"), console.log(`${u.input}\n${" ".repeat(u.index)}^\n${e.stack}`);
+		g(e instanceof Error, "eslintの設定でthrowされるものはError派生のはず"), console.log(`${u.input}\n${" ".repeat(u.index)}^\n${e.stack}`);
 		return;
 	}
 }
-export { w as format, P as parse };
+export { T as format, F as parse };
