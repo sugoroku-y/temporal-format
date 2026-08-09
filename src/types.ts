@@ -115,3 +115,11 @@ export type CountOfUnion<T, R extends 1[] = [], U = T> = [T] extends [never]
     : T extends T
       ? CountOfUnion<Exclude<U, T>, [...R, 1]>
       : never;
+
+export type AutoOmit<Parameters extends unknown[]> =
+    // 最後の引数に{}を指定できるなら省略可能にする
+    Parameters extends [...infer Pre, infer Last]
+        ? NonNullish extends Last
+            ? [...AutoOmit<Pre>, Last?]
+            : Parameters
+        : Parameters;

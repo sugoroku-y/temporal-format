@@ -182,6 +182,12 @@ describe('format', () => {
                 }),
             ).toThrow('サポートしていないロケール: unsupported-locale');
         });
+        it('unsupported calender', () => {
+            const target = Temporal.Now.plainDateISO().withCalendar('gregory');
+            expect(() => format(target, 'yyyy-MM-dd')).toThrow(
+                '対応していないカレンダーです: gregory',
+            );
+        });
         it('quoted literal', () => {
             const d = Temporal.PlainDate.from('2020-01-02');
             expect(format(d, "yyyy 'year' MM 'month' dd 'day'")).toBe(
@@ -200,6 +206,14 @@ describe('format', () => {
                 // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 format(d, 'yyy-MM-dd'),
             ).toThrow();
+        });
+        it('invalid monthCode', () => {
+            expect(() => {
+                return format({ monthCode: 'm13' }, 'M');
+            }).toThrow('想定外のmonthCodeです: m13');
+            expect(() => {
+                format({ monthCode: 'm13' }, 'MMM');
+            }).toThrow('想定外のmonthCodeです: m13');
         });
     });
 });

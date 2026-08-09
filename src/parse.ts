@@ -1,6 +1,6 @@
 import type { FormatTarget } from './FormatTarget';
 import type { ReferenceFor } from './TargetFor';
-import { TemporalFormatError } from './TemporalFormatError';
+import { throwMessage } from './TemporalFormatError';
 import type { ValidateFormatString } from './ValidateFormatString';
 import { assert } from './asserts';
 import {
@@ -18,6 +18,7 @@ import {
 import { entry as entryBase } from './entry';
 import { error } from './error';
 import { isKeyOf } from './isKeyOf';
+import { lazy } from './lazy';
 import { messageKeys } from './messages';
 import { parseAndValidate } from './parseAndValidate';
 import type { UnionToIntersection } from './types';
@@ -63,8 +64,7 @@ function scanLiteral(context: ParseContext, literal: string) {
 function scanPattern(context: ParseContext, pattern: RegExp) {
     assert(
         pattern.global && pattern.sticky,
-        // v8 ignore next
-        () => `パターンにはgとyのフラグを指定してください: ${pattern}`,
+        lazy`scanPatternに指定するパターンにはgとyのフラグを指定すること: ${pattern}`,
     );
     pattern.lastIndex = context.index;
     const match = pattern.exec(context.input);
@@ -129,7 +129,7 @@ const parseMap = {
             return;
         }
         assert(
-            context.referenceYear !== undefined,
+            context.referenceYear != null,
             'yearを使う書式指定子が使われているならreferenceがyearプロパティを持っているはず',
         );
         context.result.year = adjustYear(context.referenceYear, year);
@@ -229,10 +229,9 @@ function parseInput(context: ParseContext, nodes: ParsedFormatString) {
     for (const node of nodes) {
         if (typeof node === 'string') {
             // リテラル文字列は文字列が一致するかどうかだけ
-            assert(
-                scanLiteral(context, node),
-                () => `一致しないリテラル文字列: ${node}`,
-            );
+            if (!scanLiteral(context, node)) {
+                void error`一致しないリテラル文字列: ${node}`;
+            }
             continue;
         }
 
@@ -243,18 +242,18 @@ function parseInput(context: ParseContext, nodes: ParsedFormatString) {
         ) => void;
         parseFunc(context, node);
     }
-    assert(
-        context.index === context.input.length,
-        () => `余分な文字列があります: ${context.input.slice(context.index)}`,
-    );
+    if (context.index < context.input.length) {
+        void error`余分な文字列があります: ${context.input.slice(context.index)}`;
+    }
 
     if (context.isPm !== undefined) {
+        const hour = context.result.hour;
         assert(
-            context.result.hour !== undefined,
-            '午前午後が指定されていれば時間の指定は必須',
+            hour !== undefined,
+            '書式チェックにより、午前午後が指定されていれば時間も指定されているはず',
         );
         // 13以上にはならないはず
-        if (context.result.hour === 12) {
+        if (hour === 12) {
             if (!context.isPm) {
                 // 午前12時は0時にする
                 context.result.hour = 0;
@@ -263,7 +262,7 @@ function parseInput(context: ParseContext, nodes: ParsedFormatString) {
             // !==12なので1〜11時
             if (context.isPm) {
                 // 午後1〜11時は12時間加算する
-                context.result.hour += 12;
+                context.result.hour = hour + 12;
             }
         }
     }
@@ -331,31 +330,22 @@ export function parse(
     reference: EnableNonExistPropertyAccessing<FormatTarget>,
     { locale = 'en-US', overflow = 'reject' }: ParseOptions = {},
 ): FormatTarget | undefined {
-    assert(
-        isKeyOf(locale, LOCALES),
-        TemporalFormatError,
-        messageKeys.unsupportedLocale,
-        {
+    if (!isKeyOf(locale, LOCALES)) {
+        throwMessage(messageKeys.unsupportedLocale, {
             locale,
-        },
-    );
-    assert(
-        overflow === 'constrain' || overflow === 'reject',
-        TemporalFormatError,
-        messageKeys.unsupportedOverflow,
-        { overflow },
-    );
-    assert(
-        reference.calendarId === undefined ||
-            reference.calendarId === 'iso8601',
-        TemporalFormatError,
-        messageKeys.unsupportedCalendarId,
-        {
-            calendarId:
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- 使用されるときにはtarget.calendarIdは非NULLなので問題ない
-                reference.calendarId!,
-        },
-    );
+        });
+    }
+    if (overflow !== 'constrain' && overflow !== 'reject') {
+        throwMessage(messageKeys.unsupportedOverflow, { overflow });
+    }
+    if (
+        reference.calendarId !== undefined &&
+        reference.calendarId !== 'iso8601'
+    ) {
+        throwMessage(messageKeys.unsupportedCalendarId, {
+            calendarId: reference.calendarId,
+        });
+    }
 
     // 書式文字列を解析
     const nodes = parseAndValidate(formatString, reference, 'parse');

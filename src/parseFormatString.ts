@@ -2,7 +2,7 @@ import { assert } from './asserts';
 import { error } from './error';
 import type { ExpandTemplate } from './expandTemplate';
 import { messageKeys, messages } from './messages';
-import { TemporalFormatError } from './TemporalFormatError';
+import { throwMessage } from './TemporalFormatError';
 import type { Expect, It, ToEqual } from './type-test';
 import type { Alphabet, FailoverIfNever, Increment, Repeat } from './types';
 
@@ -236,20 +236,16 @@ export function parseFormatString(formatString: string): SuccessResult {
                 continue;
             }
             if (quote) {
-                assert(
-                    endQuote,
-                    TemporalFormatError,
-                    messageKeys.unclosedQuote,
-                    {
+                if (!endQuote) {
+                    throwMessage(messageKeys.unclosedQuote, {
                         quote,
-                    },
-                );
-                assert(
-                    quote === endQuote,
-                    TemporalFormatError,
-                    messageKeys.independentQuote,
-                    { quote: endQuote },
-                );
+                    });
+                }
+                if (quote !== endQuote) {
+                    throwMessage(messageKeys.independentQuote, {
+                        quote: endQuote,
+                    });
+                }
                 addLiteral(content.replace(/(['"])\1/g, '$1'));
                 continue;
             }
@@ -258,7 +254,9 @@ export function parseFormatString(formatString: string): SuccessResult {
         if (lastIndex < formatString.length) {
             addLiteral(formatString.slice(lastIndex));
         }
-        assert(hasToken, TemporalFormatError, messageKeys.noFormatToken);
+        if (!hasToken) {
+            throwMessage(messageKeys.noFormatToken);
+        }
         cache.set(formatString, { result: nodes });
         return nodes;
     } catch (ex) {

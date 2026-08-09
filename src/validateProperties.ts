@@ -1,4 +1,3 @@
-import { assert } from './asserts';
 import {
     DATE_TIME_TOKEN,
     FORMAT_TOKEN_MAP,
@@ -10,7 +9,6 @@ import type { FormatTarget } from './FormatTarget';
 import { isKeyOf } from './isKeyOf';
 import { messageKeys } from './messages';
 import type { SuccessResult } from './parseFormatString';
-import { TemporalFormatError } from './TemporalFormatError';
 import type { Alphabet } from './types';
 import type { Purpose } from './ValidateFormatString';
 
@@ -30,27 +28,21 @@ export function validateProperties(
             continue;
         }
         const token = node[0].repeat(node[1]);
-        assert(
-            isSupportedToken(node),
-            TemporalFormatError,
-            messageKeys.invalidFormatToken,
-            {
+        if (!isSupportedToken(node)) {
+            throwMessage(messageKeys.invalidFormatToken, {
                 token,
-            },
-        );
+            });
+        }
         const [char, length] = node;
 
         for (const property of FORMAT_TOKEN_MAP[char].properties) {
-            assert(
-                isKeyOf(property, instance),
-                TemporalFormatError,
-                messageKeys.noProperty,
-                {
+            if (!isKeyOf(property, instance)) {
+                throwMessage(messageKeys.noProperty, {
                     instance: instance.constructor.name,
                     property,
                     token,
-                },
-            );
+                });
+            }
         }
         hasDateTime ||= char in DATE_TIME_TOKEN;
         hasDayPeriod ||= char === 'a';
@@ -64,43 +56,45 @@ export function validateProperties(
         return;
     }
     // parse向けの検証はメソッドの存在確認、書式指定子の組み合わせ確認
-    assert(
-        'with' in instance && typeof instance.with === 'function',
-        TemporalFormatError,
-        messageKeys.noMethod,
-        { instance: instance.constructor.name, method: 'with' },
-    );
-    assert(
-        !hasTimeZone ||
-            ('withTimeZone' in instance &&
-                typeof instance.withTimeZone === 'function'),
-        TemporalFormatError,
-        messageKeys.noMethod,
-        { instance: instance.constructor.name, method: 'withTimeZone' },
-    );
-    assert(hasDateTime, TemporalFormatError, messageKeys.noDateTimeToken);
+    if (!('with' in instance && typeof instance.with === 'function')) {
+        throwMessage(messageKeys.noMethod, {
+            instance: instance.constructor.name,
+            method: 'with',
+        });
+    }
+    if (
+        hasTimeZone &&
+        !(
+            'withTimeZone' in instance &&
+            typeof instance.withTimeZone === 'function'
+        )
+    ) {
+        throwMessage(messageKeys.noMethod, {
+            instance: instance.constructor.name,
+            method: 'withTimeZone',
+        });
+    }
+    if (!hasDateTime) {
+        throwMessage(messageKeys.noDateTimeToken);
+    }
     if (hasDayPeriod) {
-        assert(
-            has12hours,
-            TemporalFormatError,
-            messageKeys.required12hoursWhenUsingAmPm,
-        );
-        assert(
-            !has24hours,
-            TemporalFormatError,
-            messageKeys.dontUseBoth12hoursAnd24Hours,
-        );
+        if (!has12hours) {
+            throwMessage(messageKeys.required12hoursWhenUsingAmPm);
+        }
+        if (has24hours) {
+            throwMessage(messageKeys.dontUseBoth12hoursAnd24Hours);
+        }
     } else {
-        assert(
-            !has12hours,
-            TemporalFormatError,
-            messageKeys.requiredAmPmWhenUsing12hours,
-        );
+        if (has12hours) {
+            throwMessage(messageKeys.requiredAmPmWhenUsing12hours);
+        }
     }
     const found = Object.entries(alphabetMap).find(
         ([, { length }]) => length > 1,
     );
-    assert(!found, TemporalFormatError, messageKeys.duplicateFormatToken, {
-        token: found?.[0].repeat(found[1][0]) ?? '',
-    });
+    if (found) {
+        throwMessage(messageKeys.duplicateFormatToken, {
+            token: found[0].repeat(found[1][0]),
+        });
+    }
 }

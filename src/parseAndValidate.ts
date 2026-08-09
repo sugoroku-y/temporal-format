@@ -1,6 +1,5 @@
 import { assert } from './asserts';
 import type { ParsedFormatString } from './constants';
-import { error } from './error';
 import type { FormatTarget } from './FormatTarget';
 import { parseFormatString } from './parseFormatString';
 import type { Purpose } from './ValidateFormatString';
@@ -20,6 +19,8 @@ export function parseAndValidate(
             ex instanceof Error,
             'eslintの設定でthrowされるものはError派生のはず',
         );
-        error(`${ex.message}: ${formatString}`);
+        const n = new Error(`${ex}: ${formatString}`);
+        n.stack = ex.stack;
+        throw n;
     }
 }

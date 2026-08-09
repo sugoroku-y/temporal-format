@@ -297,6 +297,43 @@ describe('parse', () => {
             }),
         ).toThrow('サポートしていないロケール: fr-FR');
     });
+    it('unsupported overflow', () => {
+        const reference = Temporal.Now.zonedDateTimeISO();
+        expect(() =>
+            parse('2020-11-31', 'yyyy-MM-dd', reference, {
+                // @ts-expect-error サポートしていないoverflowを指定するとコンパイルエラーになる
+                overflow: 'unknown',
+            }),
+        ).toThrow('サポートしていないオーバーフローの挙動: unknown');
+    });
+    it('unsupported calender', () => {
+        const reference = Temporal.Now.plainDateISO().withCalendar('gregory');
+        expect(() => parse('', 'yyyy-MM-dd', reference)).toThrow(
+            '対応していないカレンダーです: gregory',
+        );
+    });
+    it('method with not found', () => {
+        expect(() => {
+            parse('', 'yyyy', {
+                year: 2026,
+                // @ts-expect-error withメソッドがないとコンパイルエラーになる
+                with: 'with',
+            });
+        }).toThrow('にはメソッドwithがありません');
+    });
+    it('method with not found', () => {
+        expect(() => {
+            parse('', 'yyyy x', {
+                year: 2026,
+                offset: '+09:00',
+                with: function () {
+                    return this;
+                },
+                // @ts-expect-error withTimeZoneメソッドがないとコンパイルエラーになる
+                withTimeZone: 'withTimeZone',
+            });
+        }).toThrow('にはメソッドwithTimeZoneがありません');
+    });
     it('out of range', () => {
         const reference = Temporal.Now.zonedDateTimeISO();
         const spy = vitest.spyOn(console, 'log').mockImplementation(() => {

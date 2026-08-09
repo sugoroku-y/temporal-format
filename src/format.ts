@@ -1,8 +1,7 @@
 import type { FormatTarget } from './FormatTarget';
 import type { TargetFor } from './TargetFor';
-import { TemporalFormatError } from './TemporalFormatError';
+import { throwMessage } from './TemporalFormatError';
 import type { ValidateFormatString } from './ValidateFormatString';
-import { assert } from './asserts';
 import {
     CHAR_TO_2DIGIT_TOKEN,
     FORMAT_TOKEN_MAP,
@@ -49,22 +48,21 @@ const formatMap: {
     }),
     ...entry('M', ({ monthCode }, [, length], { locale }): string => {
         if (length === 1 || length === 2) {
-            const re = length === 1 ? /1[0-2]?|[2-9]/g : /0[1-9]|1[0-2]/g;
-            const month = re.exec(monthCode)?.[0];
-            assert(month, TemporalFormatError, messageKeys.invalidMonthCode, {
-                monthCode,
-            });
-            return month;
+            const month = Number(
+                /^M(0[1-9]|1[0-2])$/.exec(monthCode)?.[1] ??
+                    throwMessage(messageKeys.invalidMonthCode, {
+                        monthCode,
+                    }),
+            );
+            return padNumber(month, length);
         }
         const monthType = length === 3 ? 'short' : 'long';
         const table = LOCALES[locale].month[monthType];
-        assert(
-            isKeyOf(monthCode, table),
-            TemporalFormatError,
-            messageKeys.invalidMonthCode,
-            { monthCode },
-        );
-        return table[monthCode];
+        return isKeyOf(monthCode, table)
+            ? table[monthCode]
+            : throwMessage(messageKeys.invalidMonthCode, {
+                  monthCode,
+              });
     }),
     ...entry(CHAR_TO_2DIGIT_TOKEN, (d, [char, length]) => {
         const property = FORMAT_TOKEN_MAP[char].properties[0];
@@ -155,24 +153,16 @@ export function format(
     formatString: string,
     { locale = 'en-US' }: FormatOptions = {},
 ): string {
-    assert(
-        isKeyOf(locale, LOCALES),
-        TemporalFormatError,
-        messageKeys.unsupportedLocale,
-        {
+    if (!isKeyOf(locale, LOCALES)) {
+        throwMessage(messageKeys.unsupportedLocale, {
             locale,
-        },
-    );
-    assert(
-        target.calendarId === undefined || target.calendarId === 'iso8601',
-        TemporalFormatError,
-        messageKeys.unsupportedCalendarId,
-        {
-            calendarId:
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- 使用されるときにはtarget.calendarIdは非NULLなので問題ない
-                target.calendarId!,
-        },
-    );
+        });
+    }
+    if (target.calendarId !== undefined && target.calendarId !== 'iso8601') {
+        throwMessage(messageKeys.unsupportedCalendarId, {
+            calendarId: target.calendarId,
+        });
+    }
     const options = { locale } satisfies { locale: Locale };
     const nodes = parseAndValidate(formatString, target, 'format');
     const result: string[] = [];

@@ -1,20 +1,29 @@
 import { expandTemplate, type TemplateParameter } from './expandTemplate';
 import { type MessageKey, messages } from './messages';
+import type { AutoOmit } from './types';
 
 export class TemporalFormatError<KEY extends MessageKey> extends Error {
     name = 'TemporalFormatError';
     constructor(
         key: KEY,
-        ..._: (typeof messages)[KEY] extends `${string}$${string}`
-            ? [params: TemplateParameter<(typeof messages)[KEY]>]
-            : [params?: TemplateParameter<(typeof messages)[KEY]>]
+        ..._: AutoOmit<
+            [
+                Parameters<
+                    typeof expandTemplate<
+                        (typeof messages)[KEY],
+                        TemplateParameter<(typeof messages)[KEY]>
+                    >
+                >[1],
+            ]
+        >
     );
-    constructor(
-        key: KEY,
-        params: TemplateParameter<
-            (typeof messages)[KEY]
-        > = {} as TemplateParameter<(typeof messages)[KEY]>,
-    ) {
-        super(expandTemplate(messages[key], params));
+    constructor(key: KEY, params: Record<string, string | number> = {}) {
+        super(expandTemplate(messages[key], params as never));
     }
+}
+
+export function throwMessage<KEY extends MessageKey>(
+    ...params: ConstructorParameters<typeof TemporalFormatError<KEY>>
+): never {
+    throw new TemporalFormatError(...params);
 }

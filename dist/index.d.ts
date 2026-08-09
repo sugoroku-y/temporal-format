@@ -1,4 +1,48 @@
 type FormatTarget = Temporal.ZonedDateTime | Temporal.PlainDateTime | Temporal.PlainDate | Temporal.PlainTime | Temporal.PlainYearMonth | Temporal.PlainMonthDay;
+type TemplateType = (string | [string])[];
+type AddToken$1<Template extends TemplateType, Token extends string> = [...Template, [Token]];
+type AddLiteral$1<Template extends TemplateType, Literal extends string> = Template extends [...infer Pre, infer Last extends string] ? [...Pre, `${Last}${Literal}`] : [...Template, Literal];
+type ParseTemplate<S extends string, Result extends TemplateType = []> = S extends `${infer First}${infer Post}` ? First extends '$' ? Post extends `${First}${infer Post2}` ? ParseTemplate<Post2, AddLiteral$1<Result, First>> : Post extends `{${infer Token}}${infer Post2}` ? ParseTemplate<Post2, AddToken$1<Result, Token>> : ParseTemplate<Post, AddLiteral$1<Result, First>> : ParseTemplate<Post, AddLiteral$1<Result, First>> : Result;
+type TemplateTypeToParameterType<Template extends TemplateType> = Record<Extract<Template[number], [string]>[0], string | number>;
+type TemplateParameter<S extends string> = TemplateTypeToParameterType<ParseTemplate<S>>;
+type ApplyTemplate<Template extends TemplateType, Parameters extends Record<string, string | number>> = Template extends [infer First, ...infer Post extends TemplateType] ? `${First extends string ? First : First extends [infer Token] ? Token extends keyof Parameters ? Parameters[Token] : '' : never}${ApplyTemplate<Post, Parameters>}` : '';
+type ExpandTemplate<S extends string, Parameters extends TemplateParameter<S> = TemplateParameter<S>> = ApplyTemplate<ParseTemplate<S>, Parameters>;
+declare const messages$2: {
+  readonly unsupportedLocale: "Unsupported locale: ${locale}";
+  readonly unsupportedCalendarId: "Unsupported calendar: ${calendarId}";
+  readonly invalidMonthCode: "Unexpected monthCode: ${monthCode}";
+  readonly unsupportedOverflow: "Unsupported overflow behavior: ${overflow}";
+  readonly unclosedQuote: "The quote ${quote} is not closed";
+  readonly independentQuote: "An alone quote ${quote} is used";
+  readonly noFormatToken: "There is no format token";
+  readonly invalidFormatToken: "Invalid format token: ${token}";
+  readonly noProperty: "${instance} does not have property ${property}: ${token}";
+  readonly noMethod: "${instance} does not have method ${method}";
+  readonly noDateTimeToken: "There is no date or time format token";
+  readonly required12hoursWhenUsingAmPm: "When using AM/PM token (a), 12-hour token (h/hh) is also required";
+  readonly dontUseBoth12hoursAnd24Hours: "You cannot specify both 12-hour token (h/hh) and 24-hour token (H/HH)";
+  readonly requiredAmPmWhenUsing12hours: "When using 12-hour token (h/hh), AM/PM token (a) is also required";
+  readonly duplicateFormatToken: "Duplicate format token: ${token}";
+};
+declare const messages$1: {
+  /** サポートしていないロケール */
+  readonly unsupportedLocale: "サポートしていないロケール: ${locale}";
+  readonly unsupportedCalendarId: "対応していないカレンダーです: ${calendarId}";
+  readonly invalidMonthCode: "想定外のmonthCodeです: ${monthCode}";
+  readonly unsupportedOverflow: "サポートしていないオーバーフローの挙動: ${overflow}";
+  readonly noProperty: "${instance}にはプロパティ${property}がありません: ${token}";
+  readonly noMethod: "${instance}にはメソッド${method}がありません";
+  readonly unclosedQuote: "引用符${quote}が閉じられていません";
+  readonly independentQuote: "単独の引用符${quote}が使われています";
+  readonly noFormatToken: "書式指定子がありません";
+  readonly invalidFormatToken: "無効な書式指定子です: ${token}";
+  readonly noDateTimeToken: "日付や時刻の書式指定子がありません";
+  readonly required12hoursWhenUsingAmPm: "午前/午後(a)がある場合、12時間表記(h/hh)も必要です";
+  readonly dontUseBoth12hoursAnd24Hours: "12時間表記(h/hh)と24時間表記(H/HH)の両方を指定することはできません";
+  readonly requiredAmPmWhenUsing12hours: "12時間表記(h/hh)がある場合、午前/午後(a)も必要です";
+  readonly duplicateFormatToken: "書式指定子が重複しています: ${token}";
+};
+declare const messages: typeof process.env.TEMPORAL_FORMAT_LANG extends "ja" ? typeof messages$1 : typeof messages$2;
 type Split<S extends string> = S extends `${infer First}${infer Rest}` ? First | Split<Rest> : never;
 type UppercaseAlphabet = Split<'ABCDEFGHIJKLMNOPQRSTUVWXYZ'>;
 type LowercaseAlphabet = Lowercase<UppercaseAlphabet>;
@@ -42,9 +86,12 @@ type AddLiteral<R extends SuccessResult, Literal extends string> = R extends [..
 /** 書式文字列を解析 */
 type ParseFormatString<S extends string, R extends SuccessResult = []> = S extends `${infer First}${infer Rest}` ? First extends "'" | '"' ? Rest extends `${First}${infer Rest2}` ? ParseFormatString<Rest2, AddLiteral<R, First>> : ParseQuotedLiteral<Rest, First, R> : ParseFormatString<Rest, First extends Alphabet ? AddToken<R, First> : AddLiteral<R, First>> : R;
 /** 書式文字列中の引用符内を解析 */
-type ParseQuotedLiteral<S extends string, Q extends "'" | '"', R extends SuccessResult> = S extends `${infer First}${infer Rest}` ? First extends "'" | '"' ? Rest extends `${First}${infer Rest2}` ? ParseQuotedLiteral<Rest2, Q, AddLiteral<R, First>> : First extends Q ? ParseFormatString<Rest, R> : FailureResult<`単独の引用符${First}が使われています`> : ParseQuotedLiteral<Rest, Q, AddLiteral<R, First>> : FailureResult<`引用符${Q}が閉じられていません`>;
+type ParseQuotedLiteral<S extends string, Q extends "'" | '"', R extends SuccessResult> = S extends `${infer First}${infer Rest}` ? First extends "'" | '"' ? Rest extends `${First}${infer Rest2}` ? ParseQuotedLiteral<Rest2, Q, AddLiteral<R, First>> : First extends Q ? ParseFormatString<Rest, R> : FailureResult<ExpandTemplate<typeof messages.independentQuote, {
+  quote: First;
+}>> : ParseQuotedLiteral<Rest, Q, AddLiteral<R, First>> : FailureResult<ExpandTemplate<typeof messages.unclosedQuote, {
+  quote: Q;
+}>>;
 type ExtractToken<R extends ParseResult> = R extends SuccessResult<infer Parsed extends TokenNode | LiteralNode> ? FailoverIfNever<Extract<Parsed, TokenNode>, ['no-token']> : ['failure'];
-type TokenNodeToString<Token extends TokenNode> = Token extends Token ? Repeat<Token[0], Token[1]> : never;
 declare const FORMAT_TOKEN_MAP: {
   readonly y: {
     readonly length: [2, 4];
@@ -251,21 +298,23 @@ type ValidateParsingSuccessfull<R extends ParseResult> = R extends FailureResult
  * ある場合はneverを返す
  * @template R ParseFormatStringの返り値
  */
-type ValidateTokenExistence<R extends ParseResult> = ExtractToken<R> extends ['no-token'] ? '書式指定子がありません' : never;
+type ValidateTokenExistence<R extends ParseResult> = ExtractToken<R> extends ['no-token'] ? typeof messages.noFormatToken : never;
 /**
  * 無効な書式指定子が指定されていればエラーメッセージを返す型関数
  *
  * 有効な書式指定子だけであればneverを返す
  * @template R ParseFormatStringの返り値
  */
-type ValidateTokenSupported<R extends ParseResult> = ExtractToken<R> extends (infer Token extends TokenNode) ? Token extends Token ? IsSupportedToken<Token> extends false ? `無効な書式指定子です: ${TokenNodeToString<Token>}` : never : never : never;
+type ValidateTokenSupported<R extends ParseResult> = ExtractToken<R> extends (infer Token extends TokenNode) ? Token extends Token ? IsSupportedToken<Token> extends false ? ExpandTemplate<typeof messages.invalidFormatToken, {
+  token: Repeat<Token[0], Token[1]>;
+}> : never : never : never;
 /**
  * 日付や時刻の書式指定子がなければエラーメッセージを返す型関数
  *
  * あればneverを返す
  * @template R ParseFormatStringの返り値
  */
-type ValidateDateTimeTokenExistence<R extends ParseResult> = ExtractToken<R> extends (infer Token extends TokenNode) ? [Extract<Token, TokenNode<DateTimeToken>>] extends [never] ? '日付や時刻の書式指定子がありません' : never : never;
+type ValidateDateTimeTokenExistence<R extends ParseResult> = ExtractToken<R> extends (infer Token extends TokenNode) ? [Extract<Token, TokenNode<DateTimeToken>>] extends [never] ? typeof messages.noDateTimeToken : never : never;
 /**
  * 午前午後の書式指定子と12時間制の時間の書式指定子がどちらか一方だけ指定されていればエラーメッセージを返す型関数
  *
@@ -274,11 +323,13 @@ type ValidateDateTimeTokenExistence<R extends ParseResult> = ExtractToken<R> ext
  */
 type ValidateDayPeriodAnd12Hours<R extends ParseResult> = ExtractToken<R> extends (infer Token extends TokenNode) ? {
   __: never;
-  ah: [Extract<Token[0], 'H'>] extends [never] ? never : '12時間表記(h/hh)と24時間表記(H/HH)の両方を指定することはできません';
-  a_: '午前/午後(a)がある場合、12時間表記(h/hh)も必要です';
-  _h: '12時間表記(h/hh)がある場合、午前/午後(a)も必要です';
+  ah: [Extract<Token[0], 'H'>] extends [never] ? never : typeof messages.dontUseBoth12hoursAnd24Hours;
+  a_: typeof messages.required12hoursWhenUsingAmPm;
+  _h: typeof messages.requiredAmPmWhenUsing12hours;
 }[`${FailoverIfNever<Extract<Token[0], 'a'>, '_'>}${FailoverIfNever<Extract<Token[0], 'h'>, '_'>}`] : never;
-type ValidateNoDuplicateToken<R extends ParseResult> = R extends [infer First, ...infer Rest extends SuccessResult] ? First extends TokenNode ? [Extract<Rest[number], TokenNode<First[0]>>] extends [never] ? ValidateNoDuplicateToken<Rest> : `書式指定子が重複しています: ${Repeat<First[0], First[1]>}` : ValidateNoDuplicateToken<Rest> : never;
+type ValidateNoDuplicateToken<R extends ParseResult> = R extends [infer First, ...infer Rest extends SuccessResult] ? First extends TokenNode ? [Extract<Rest[number], TokenNode<First[0]>>] extends [never] ? ValidateNoDuplicateToken<Rest> : ExpandTemplate<typeof messages.duplicateFormatToken, {
+  token: Repeat<First[0], First[1]>;
+}> : ValidateNoDuplicateToken<Rest> : never;
 /** 書式文字列の利用目的 */
 type Purpose = 'format' | 'parse';
 /**

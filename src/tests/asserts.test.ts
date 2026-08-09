@@ -1,4 +1,5 @@
 import { assert } from '../asserts';
+import { lazy } from '../lazy';
 
 describe('assert', () => {
     it('success', () => {
@@ -9,5 +10,8 @@ describe('assert', () => {
     });
     it('failure with message', () => {
         expect(() => assert(false, 'test message')).toThrow('test message');
+    });
+    it('failure with message function', () => {
+        expect(() => assert(false, lazy`abc${123}def`)).toThrow('abc123def');
     });
 });
