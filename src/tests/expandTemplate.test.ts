@@ -10,9 +10,9 @@ describe('expandTemplate', () => {
         ).toBe('abc!"#ghi456${mno}');
     });
     it('パラメーターなし', () => {
-        expect(
-            expandTemplate('abcdefghijklmno', { def: '!"#', jkl: 456 }),
-        ).toBe('abcdefghijklmno');
+        expect(expandTemplate('abcdefghijklmno', {})).toBe('abcdefghijklmno');
+        // パラメーターが一つもないときは省略できる
+        expect(expandTemplate('abcdefghijklmno')).toBe('abcdefghijklmno');
     });
     it('存在しないパラメーターは空文字列に変換', () => {
         expect(

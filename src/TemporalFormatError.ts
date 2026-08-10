@@ -17,7 +17,10 @@ export class TemporalFormatError<KEY extends MessageKey> extends Error {
             ]
         >
     );
-    constructor(key: KEY, params: Record<string, string | number> = {}) {
+    constructor(
+        key: KEY,
+        params: Partial<Record<string, string | number>> = {},
+    ) {
         super(expandTemplate(messages[key], params as never));
     }
 }

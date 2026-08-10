@@ -1,4 +1,5 @@
 import type { Expect, It, ToEqual } from './type-test';
+import type { AutoOmit, NonNullish, StrictRecord } from './types';
 
 type TemplateType = (string | [string])[];
 
@@ -24,7 +25,7 @@ type ParseTemplate<
               : ParseTemplate<Post, AddLiteral<Result, First>>
         : ParseTemplate<Post, AddLiteral<Result, First>>
     : Result;
-type TemplateTypeToParameterType<Template extends TemplateType> = Record<
+type TemplateTypeToParameterType<Template extends TemplateType> = StrictRecord<
     Extract<Template[number], [string]>[0],
     string | number
 >;
@@ -33,7 +34,7 @@ export type TemplateParameter<S extends string> = TemplateTypeToParameterType<
 >;
 type ApplyTemplate<
     Template extends TemplateType,
-    Parameters extends Record<string, string | number>,
+    Parameters extends Partial<Record<string, string | number>>,
 > = Template extends [infer First, ...infer Post extends TemplateType]
     ? `${First extends string
           ? First
@@ -62,7 +63,7 @@ declare const _test_ExpandTemplate: [
     ...It<
         'パラメーターなし',
         Expect<
-            ExpandTemplate<'abcdefghijklmno', { def: '!"#'; jkl: 456 }>,
+            ExpandTemplate<'abcdefghijklmno', NonNullish>,
             ToEqual<'abcdefghijklmno'>
         >
     >,
@@ -90,13 +91,11 @@ export function expandTemplate<
     const Parameters extends TemplateParameter<S>,
 >(
     template: S,
-    ..._: S extends `${string}$${string}`
-        ? [parameters: NoInfer<Parameters>]
-        : [parameters?: NoInfer<Parameters>]
+    ..._: AutoOmit<[parameters: Parameters]>
 ): ExpandTemplate<S, Parameters>;
 export function expandTemplate(
     template: string,
-    parameters: Record<string, string | number> = {},
+    parameters: Partial<Record<string, string | number>> = {},
 ): string {
     return template.replace(/\$(?:\$|\{(.*?)\})/g, (match, token) => {
         if (match === '$$') {

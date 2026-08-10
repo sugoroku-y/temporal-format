@@ -123,3 +123,7 @@ export type AutoOmit<Parameters extends unknown[]> =
             ? [...AutoOmit<Pre>, Last?]
             : Parameters
         : Parameters;
+
+export type StrictRecord<Key extends PropertyKey, Value> = [Key] extends [never]
+    ? Partial<Record<PropertyKey, never>>
+    : Record<Key, Value>;
