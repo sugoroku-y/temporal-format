@@ -1,11 +1,39 @@
 type FormatTarget = Temporal.ZonedDateTime | Temporal.PlainDateTime | Temporal.PlainDate | Temporal.PlainTime | Temporal.PlainYearMonth | Temporal.PlainMonthDay;
+type Split<S extends string> = S extends `${infer First}${infer Rest}` ? First | Split<Rest> : never;
+type UppercaseAlphabet = Split<'ABCDEFGHIJKLMNOPQRSTUVWXYZ'>;
+type LowercaseAlphabet = Lowercase<UppercaseAlphabet>;
+/** アルファベット1文字の文字列リテラル型 */
+type Alphabet = UppercaseAlphabet | LowercaseAlphabet;
+/**
+ * `{}`型はeslintで警告されるため別名を用意
+ */
+type NonNullish = Record<never, never>;
+/**
+ * TがneverならばFallbackにする
+ */
+type FailoverIfNever<T, Fallback> = [T] extends [never] ? Fallback : T;
+type Counter<N extends number, R extends 1[] = []> = R['length'] extends N ? R : Counter<N, [1, ...R]>;
+/**
+ * 数を1つ増やす
+ */
+type Increment<N extends number> = Extract<[...Counter<N>, 1]['length'], number>;
+type RepeatSub<S extends string, N extends number, R extends string, C extends 1[]> = C['length'] extends N ? R : RepeatSub<S, N, `${R}${S}`, [1, ...C]>;
+/**
+ * 文字列リテラル型を指定回数繰り返した文字列リテラル型を返す型関数
+ *
+ * S、N。いずれもUnion型を指定するとそれぞれの型で繰り返したUnion型となる。
+ * @template S 文字列リテラル型
+ * @template N 繰り返す回数
+ */
+type Repeat<S extends string, N extends number> = S extends S ? N extends N ? RepeatSub<S, N, '', []> : never : never;
+type StrictRecord<Key extends PropertyKey, Value> = [Key] extends [never] ? Partial<Record<PropertyKey, never>> : Record<Key, Value>;
 type TemplateType = (string | [string])[];
 type AddToken$1<Template extends TemplateType, Token extends string> = [...Template, [Token]];
 type AddLiteral$1<Template extends TemplateType, Literal extends string> = Template extends [...infer Pre, infer Last extends string] ? [...Pre, `${Last}${Literal}`] : [...Template, Literal];
 type ParseTemplate<S extends string, Result extends TemplateType = []> = S extends `${infer First}${infer Post}` ? First extends '$' ? Post extends `${First}${infer Post2}` ? ParseTemplate<Post2, AddLiteral$1<Result, First>> : Post extends `{${infer Token}}${infer Post2}` ? ParseTemplate<Post2, AddToken$1<Result, Token>> : ParseTemplate<Post, AddLiteral$1<Result, First>> : ParseTemplate<Post, AddLiteral$1<Result, First>> : Result;
-type TemplateTypeToParameterType<Template extends TemplateType> = Record<Extract<Template[number], [string]>[0], string | number>;
+type TemplateTypeToParameterType<Template extends TemplateType> = StrictRecord<Extract<Template[number], [string]>[0], string | number>;
 type TemplateParameter<S extends string> = TemplateTypeToParameterType<ParseTemplate<S>>;
-type ApplyTemplate<Template extends TemplateType, Parameters extends Record<string, string | number>> = Template extends [infer First, ...infer Post extends TemplateType] ? `${First extends string ? First : First extends [infer Token] ? Token extends keyof Parameters ? Parameters[Token] : '' : never}${ApplyTemplate<Post, Parameters>}` : '';
+type ApplyTemplate<Template extends TemplateType, Parameters extends Partial<Record<string, string | number>>> = Template extends [infer First, ...infer Post extends TemplateType] ? `${First extends string ? First : First extends [infer Token] ? Token extends keyof Parameters ? Parameters[Token] : '' : never}${ApplyTemplate<Post, Parameters>}` : '';
 type ExpandTemplate<S extends string, Parameters extends TemplateParameter<S> = TemplateParameter<S>> = ApplyTemplate<ParseTemplate<S>, Parameters>;
 declare const messages$2: {
   readonly unsupportedLocale: "Unsupported locale: ${locale}";
@@ -43,33 +71,6 @@ declare const messages$1: {
   readonly duplicateFormatToken: "書式指定子が重複しています: ${token}";
 };
 declare const messages: typeof process.env.TEMPORAL_FORMAT_LANG extends "ja" ? typeof messages$1 : typeof messages$2;
-type Split<S extends string> = S extends `${infer First}${infer Rest}` ? First | Split<Rest> : never;
-type UppercaseAlphabet = Split<'ABCDEFGHIJKLMNOPQRSTUVWXYZ'>;
-type LowercaseAlphabet = Lowercase<UppercaseAlphabet>;
-/** アルファベット1文字の文字列リテラル型 */
-type Alphabet = UppercaseAlphabet | LowercaseAlphabet;
-/**
- * `{}`型はeslintで警告されるため別名を用意
- */
-type NonNullish = Record<never, never>;
-/**
- * TがneverならばFallbackにする
- */
-type FailoverIfNever<T, Fallback> = [T] extends [never] ? Fallback : T;
-type Counter<N extends number, R extends 1[] = []> = R['length'] extends N ? R : Counter<N, [1, ...R]>;
-/**
- * 数を1つ増やす
- */
-type Increment<N extends number> = Extract<[...Counter<N>, 1]['length'], number>;
-type RepeatSub<S extends string, N extends number, R extends string, C extends 1[]> = C['length'] extends N ? R : RepeatSub<S, N, `${R}${S}`, [1, ...C]>;
-/**
- * 文字列リテラル型を指定回数繰り返した文字列リテラル型を返す型関数
- *
- * S、N。いずれもUnion型を指定するとそれぞれの型で繰り返したUnion型となる。
- * @template S 文字列リテラル型
- * @template N 繰り返す回数
- */
-type Repeat<S extends string, N extends number> = S extends S ? N extends N ? RepeatSub<S, N, '', []> : never : never;
 /** 書式指定のノード */
 type TokenNode<Char extends string = string, Length extends number = number> = [Char, Length];
 /** リテラル文字列のノード */

@@ -41,7 +41,8 @@ var t = process.env.TEMPORAL_FORMAT_LANG === "ja" ? {
 	}
 };
 function i(...e) {
-	throw new r(...e);
+	let t = new r(...e);
+	throw Error.captureStackTrace(t, i), t;
 }
 function a(e, t) {
 	return e in t;
