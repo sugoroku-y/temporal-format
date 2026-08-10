@@ -25,5 +25,7 @@ export class TemporalFormatError<KEY extends MessageKey> extends Error {
 export function throwMessage<KEY extends MessageKey>(
     ...params: ConstructorParameters<typeof TemporalFormatError<KEY>>
 ): never {
-    throw new TemporalFormatError(...params);
+    const error = new TemporalFormatError(...params);
+    Error.captureStackTrace(error, throwMessage);
+    throw error;
 }
