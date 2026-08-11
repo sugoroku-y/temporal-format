@@ -1,16 +1,5 @@
 {
     "prettier.configPath": "./prettier.config.js",
-    "markdownlint.config": {
-        "no-inline-html": {
-            "allowed_elements": ["br"]
-        },
-        "no-empty-links": false,
-        "table-column-style": {
-            "aligned_delimiter": true,
-            "style": "aligned"
-        }
-    },
-    "japanese-proofreading.textlint.全角文字と半角文字の間": false,
     "editor.tabSize": 4,
     "[markdown]": {
         "editor.tabSize": 2

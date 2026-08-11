@@ -1,0 +1,9 @@
+{
+    "no-inline-html": {
+        "allowed_elements": ["br"]
+    },
+    "table-column-style": {
+        "aligned_delimiter": true,
+        "style": "aligned"
+    }
+}
