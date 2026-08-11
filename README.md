@@ -38,6 +38,24 @@ console.log(parsed.toString());
 
 このチェックは型レベルで行われるため、開発中に問題を早く見つけられます。
 
+## 言語切り替え
+
+表示されるエラーメッセージはデフォルトでは英語ですが、次のように記述したファイルをTypeScriptのコンパイル対象となる位置に置くと、コンパイルエラーのメッセージが日本語になります。
+
+```ts
+declare global {
+  namespace NodeJS {
+    interface ProcessEnv {
+        TEMPORAL_FORMAT_LANG: 'ja';
+    }
+  }
+}
+```
+
+実行時に使用されるメッセージは、実行時の環境変数`TEMPORAL_FORMAT_LANG`の値が`ja`のとき、日本語になります。
+
+コンパイルエラーでのメッセージと、実行時のメッセージをそれぞれ異なる言語で表示することもできます。
+
 ## 仕様
 
 - [format](docs/functions/format.md)
