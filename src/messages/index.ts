@@ -7,10 +7,10 @@ export const messages = (
 ) as typeof process.env.TEMPORAL_FORMAT_LANG extends 'ja'
     ? typeof ja
     : typeof en;
-export type MessageKey = keyof typeof messages;
-export type MessageKeys = {
-    [Key in MessageKey]: Key;
-};
-export const messageKeys: MessageKeys = Object.fromEntries(
+export const messageKeys = Object.fromEntries(
     Object.keys(messages).map(key => [key, key]),
-) as { [Key in MessageKey]: Key };
+) as {
+    [Key in keyof typeof messages]: Key;
+};
+export type MessageKeys = typeof messageKeys;
+export type MessageKey = keyof MessageKeys;
