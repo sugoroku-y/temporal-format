@@ -5,7 +5,7 @@
 ## インストール
 
 ```bash
-npm install @sugoroku-y/temporal-format
+npm install github:sugoroku-y/temporal-format
 ```
 
 ## 使い方
