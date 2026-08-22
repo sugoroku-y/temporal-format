@@ -36,38 +36,67 @@ type TemplateParameter<S extends string> = TemplateTypeToParameterType<ParseTemp
 type ApplyTemplate<Template extends TemplateType, Parameters extends Partial<Record<string, string | number>>> = Template extends [infer First, ...infer Post extends TemplateType] ? `${First extends string ? First : First extends [infer Token] ? Token extends keyof Parameters ? Parameters[Token] : '' : never}${ApplyTemplate<Post, Parameters>}` : '';
 type ExpandTemplate<S extends string, Parameters extends TemplateParameter<S> = TemplateParameter<S>> = ApplyTemplate<ParseTemplate<S>, Parameters>;
 declare const messages$2: {
+  /** Error when an unsupported locale name is specified */
   readonly unsupportedLocale: "Unsupported locale: ${locale}";
-  readonly unsupportedCalendarId: "Unsupported calendar: ${calendarId}";
+  /** Error when an unsupported calendar ID is specified */
+  readonly unsupportedCalendarId: "Unsupported calendar ID: ${calendarId}";
+  /** Error when monthCode has an unexpected value */
   readonly invalidMonthCode: "Unexpected monthCode: ${monthCode}";
+  /** Error when an unsupported overflow behavior is specified */
   readonly unsupportedOverflow: "Unsupported overflow behavior: ${overflow}";
-  readonly unclosedQuote: "The quote ${quote} is not closed";
-  readonly independentQuote: "An alone quote ${quote} is used";
-  readonly noFormatToken: "There is no format token";
+  /** Error when a quote is not closed */
+  readonly unclosedQuote: "Unclosed quote: ${quote}";
+  /** Error when a quote is used alone */
+  readonly independentQuote: "Standalone quote used: ${quote}";
+  /** Error when there is no format token */
+  readonly noFormatToken: "No format token present";
+  /** Error when an invalid format token is present */
   readonly invalidFormatToken: "Invalid format token: ${token}";
+  /** Error when a property does not exist on the target instance */
   readonly noProperty: "${instance} does not have property ${property}: ${token}";
+  /** Error when a method does not exist on the target instance */
   readonly noMethod: "${instance} does not have method ${method}";
-  readonly noDateTimeToken: "There is no date or time format token";
-  readonly required12hoursWhenUsingAmPm: "When using AM/PM token (a), 12-hour token (h/hh) is also required";
-  readonly dontUseBoth12hoursAnd24Hours: "You cannot specify both 12-hour token (h/hh) and 24-hour token (H/HH)";
-  readonly requiredAmPmWhenUsing12hours: "When using 12-hour token (h/hh), AM/PM token (a) is also required";
+  /** Error when there is no date or time format token */
+  readonly noDateTimeToken: "No date or time format token present";
+  /** Error when AM/PM is used but 12-hour token is missing */
+  readonly required12hoursWhenUsingAmPm: "When using AM/PM token (a), a 12-hour token (h/hh) is required";
+  /** Error when both 12-hour and 24-hour tokens are used */
+  readonly dontUseBoth12hoursAnd24Hours: "Cannot specify both 12-hour token (h/hh) and 24-hour token (H/HH)";
+  /** Error when 12-hour token is used but AM/PM token is missing */
+  readonly requiredAmPmWhenUsing12hours: "When using 12-hour token (h/hh), AM/PM token (a) is required";
+  /** Error when a format token is duplicated */
   readonly duplicateFormatToken: "Duplicate format token: ${token}";
 };
 declare const messages$1: {
-  /** サポートしていないロケール */
-  readonly unsupportedLocale: "サポートしていないロケール: ${locale}";
-  readonly unsupportedCalendarId: "対応していないカレンダーです: ${calendarId}";
-  readonly invalidMonthCode: "想定外のmonthCodeです: ${monthCode}";
-  readonly unsupportedOverflow: "サポートしていないオーバーフローの挙動: ${overflow}";
+  /** サポートされていないロケール名が指定されたときのエラー */
+  readonly unsupportedLocale: "サポートされていないロケール: ${locale}";
+  /** サポートされていないカレンダーIDが指定されたときのエラー */
+  readonly unsupportedCalendarId: "サポートされていないカレンダーID: ${calendarId}";
+  /** monthCodeの値が想定外だったときのエラー */
+  readonly invalidMonthCode: "想定外のmonthCode: ${monthCode}";
+  /** サポートされていないoverflowの挙動が指定されたときのエラー */
+  readonly unsupportedOverflow: "サポートされていないオーバーフローの挙動: ${overflow}";
+  /** 対象インスタンスに指定したプロパティが存在しないときのエラー */
   readonly noProperty: "${instance}にはプロパティ${property}がありません: ${token}";
+  /** 対象インスタンスに指定したメソッドが存在しないときのエラー */
   readonly noMethod: "${instance}にはメソッド${method}がありません";
+  /** 引用符が閉じられていないときのエラー */
   readonly unclosedQuote: "引用符${quote}が閉じられていません";
-  readonly independentQuote: "単独の引用符${quote}が使われています";
-  readonly noFormatToken: "書式指定子がありません";
-  readonly invalidFormatToken: "無効な書式指定子です: ${token}";
-  readonly noDateTimeToken: "日付や時刻の書式指定子がありません";
-  readonly required12hoursWhenUsingAmPm: "午前/午後(a)がある場合、12時間表記(h/hh)も必要です";
-  readonly dontUseBoth12hoursAnd24Hours: "12時間表記(h/hh)と24時間表記(H/HH)の両方を指定することはできません";
-  readonly requiredAmPmWhenUsing12hours: "12時間表記(h/hh)がある場合、午前/午後(a)も必要です";
+  /** 引用符が単独で使用されているときのエラー */
+  readonly independentQuote: "引用符${quote}が単独で使用されています";
+  /** 書式指定子がないときのエラー */
+  readonly noFormatToken: "書式指定子が見つかりません";
+  /** 無効な書式指定子が含まれているときのエラー */
+  readonly invalidFormatToken: "無効な書式指定子: ${token}";
+  /** 日付または時刻に対応する書式指定子がないときのエラー */
+  readonly noDateTimeToken: "日付または時刻の書式指定子がありません";
+  /** 午前/午後を使う場合に12時間表記が不足しているときのエラー */
+  readonly required12hoursWhenUsingAmPm: "午前/午後(a)を使う場合、12時間表記(h/hh)が必要です";
+  /** 12時間表記と24時間表記を同時に使ったときのエラー */
+  readonly dontUseBoth12hoursAnd24Hours: "12時間表記(h/hh)と24時間表記(H/HH)を同時に指定することはできません";
+  /** 12時間表記を使う場合に午前/午後が不足しているときのエラー */
+  readonly requiredAmPmWhenUsing12hours: "12時間表記(h/hh)を使う場合、午前/午後(a)が必要です";
+  /** 書式指定子が重複しているときのエラー */
   readonly duplicateFormatToken: "書式指定子が重複しています: ${token}";
 };
 declare const messages: typeof process.env.TEMPORAL_FORMAT_LANG extends "ja" ? typeof messages$1 : typeof messages$2;

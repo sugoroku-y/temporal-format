@@ -68,7 +68,7 @@ describe('format', () => {
         expect(() =>
             // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
             format('hello', "'hello'"),
-        ).toThrow("書式指定子がありません: 'hello'");
+        ).toThrow("書式指定子が見つかりません: 'hello'");
     });
 
     describe('12 hour', () => {
@@ -154,13 +154,13 @@ describe('format', () => {
             expect(() =>
                 // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 format(d, "yyyy-'MM\"'-dd"),
-            ).toThrow('単独の引用符"が使われています: yyyy-\'MM"\'-dd');
+            ).toThrow('引用符"が単独で使用されています: yyyy-\'MM"\'-dd');
         });
         it('unsupported format string', () => {
             expect(() =>
                 //@ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 format(d, 'yyy-MM-dd'),
-            ).toThrow('無効な書式指定子です: yyy: yyy-MM-dd');
+            ).toThrow('無効な書式指定子: yyy: yyy-MM-dd');
         });
         it('property not found', () => {
             expect(() =>
@@ -172,7 +172,7 @@ describe('format', () => {
             expect(() => {
                 // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 format(d, "'yyyy-MM-dd'");
-            }).toThrow("書式指定子がありません: 'yyyy-MM-dd'");
+            }).toThrow("書式指定子が見つかりません: 'yyyy-MM-dd'");
         });
         it('unsupported locale', () => {
             expect(() =>
@@ -180,12 +180,12 @@ describe('format', () => {
                     // @ts-expect-error サポート外のロケールを指定した場合の確認のためエラーになるロケールを指定
                     locale: 'unsupported-locale',
                 }),
-            ).toThrow('サポートしていないロケール: unsupported-locale');
+            ).toThrow('サポートされていないロケール: unsupported-locale');
         });
         it('unsupported calender', () => {
             const target = Temporal.Now.plainDateISO().withCalendar('gregory');
             expect(() => format(target, 'yyyy-MM-dd')).toThrow(
-                '対応していないカレンダーです: gregory',
+                'サポートされていないカレンダーID: gregory',
             );
         });
         it('quoted literal', () => {
@@ -210,10 +210,10 @@ describe('format', () => {
         it('invalid monthCode', () => {
             expect(() => {
                 return format({ monthCode: 'm13' }, 'M');
-            }).toThrow('想定外のmonthCodeです: m13');
+            }).toThrow('想定外のmonthCode: m13');
             expect(() => {
                 format({ monthCode: 'm13' }, 'MMM');
-            }).toThrow('想定外のmonthCodeです: m13');
+            }).toThrow('想定外のmonthCode: m13');
         });
     });
 });

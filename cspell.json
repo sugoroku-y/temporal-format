@@ -1,11 +1,6 @@
 {
     "useGitignore": true,
-    "ignorePaths": [
-        "dist",
-        "docs"
-    ],
+    "ignorePaths": ["dist", "docs"],
     "allowCompoundWords": true,
-    "words": [
-        "dont"
-    ]
+    "words": ["dont", "sugoroku"]
 }

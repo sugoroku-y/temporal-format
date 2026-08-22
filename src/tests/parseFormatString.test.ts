@@ -27,11 +27,11 @@ describe('parseFormatString', () => {
 
     it('throws when the format string contains no format tokens', () => {
         expect(() => parseFormatString('123 / -')).toThrow(
-            '書式指定子がありません',
+            '書式指定子が見つかりません',
         );
         // エラーになった書式文字列をもう一度(エラーもキャッシュされていることの確認)
         expect(() => parseFormatString('123 / -')).toThrow(
-            '書式指定子がありません',
+            '書式指定子が見つかりません',
         );
     });
 });

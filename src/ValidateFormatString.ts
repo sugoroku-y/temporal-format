@@ -45,7 +45,7 @@ declare const _test_ValidateParsingSuccessfull: [
         '2. ValidateParsingSuccessfull: 解析失敗したらエラーメッセージ',
         Expect<
             ValidateParsingSuccessfull<ParseFormatString<`'yyyy"MMdd'`>>,
-            ToEqual<'単独の引用符"が使われています'>
+            ToEqual<'引用符"が単独で使用されています'>
         >
     >,
     ...It<
@@ -73,7 +73,7 @@ declare const _test_ValidateTokenExistence: [
         '1. ValidateTokenExistence: 書式指定子がない場合はエラー',
         Expect<
             ValidateTokenExistence<ParseFormatString<'"yyyyMMdd"'>>,
-            ToEqual<'書式指定子がありません'>
+            ToEqual<'書式指定子が見つかりません'>
         >
     >,
     ...It<
@@ -128,14 +128,14 @@ declare const _test_ValidateTokenSupported: [
         '1. ValidateTokenSupported: 無効な書式指定子が指定されていたらエラー',
         Expect<
             ValidateTokenSupported<ParseFormatString<'yyy-MM-dd'>>,
-            ToEqual<'無効な書式指定子です: yyy'>
+            ToEqual<'無効な書式指定子: yyy'>
         >
     >,
     ...It<
         '2. ValidateTokenSupported: 無効な書式指定子が複数指定されていてもエラー',
         Expect<
             ValidateTokenSupported<ParseFormatString<'yyy-MM-ddd'>>,
-            ToEqual<'無効な書式指定子です: yyy' | '無効な書式指定子です: ddd'>
+            ToEqual<'無効な書式指定子: yyy' | '無効な書式指定子: ddd'>
         >
     >,
     ...It<
@@ -193,7 +193,7 @@ declare const _test_ValidateDateTimeTokenExistence: [
             ValidateDateTimeTokenExistence<
                 ParseFormatString<'E EE EEE EEEE X XX XXX x xx xxx'>
             >,
-            ToEqual<'日付や時刻の書式指定子がありません'>
+            ToEqual<'日付または時刻の書式指定子がありません'>
         >
     >,
     ...It<
@@ -271,21 +271,21 @@ declare const _test_ValidateDayPeriodAnd12Hours: [
         '1: ValidateDayPeriodAnd12Hours: 午前/午後だけ指定されていればエラー',
         Expect<
             ValidateDayPeriodAnd12Hours<ParseFormatString<'a HH:mm'>>,
-            ToEqual<'午前/午後(a)がある場合、12時間表記(h/hh)も必要です'>
+            ToEqual<'午前/午後(a)を使う場合、12時間表記(h/hh)が必要です'>
         >
     >,
     ...It<
         '2: ValidateDayPeriodAnd12Hours: 12時間表記だけ指定されていればエラー',
         Expect<
             ValidateDayPeriodAnd12Hours<ParseFormatString<'hh:mm'>>,
-            ToEqual<'12時間表記(h/hh)がある場合、午前/午後(a)も必要です'>
+            ToEqual<'12時間表記(h/hh)を使う場合、午前/午後(a)が必要です'>
         >
     >,
     ...It<
         '2: ValidateDayPeriodAnd12Hours: 12時間表記と24時間表記が両方指定されていればエラー',
         Expect<
             ValidateDayPeriodAnd12Hours<ParseFormatString<'a HH:hh:mm'>>,
-            ToEqual<'12時間表記(h/hh)と24時間表記(H/HH)の両方を指定することはできません'>
+            ToEqual<'12時間表記(h/hh)と24時間表記(H/HH)を同時に指定することはできません'>
         >
     >,
     ...It<
@@ -457,21 +457,21 @@ declare const _test_ValidationMessage: [
         '2. ValidationMessage: format: 解析エラー: 単独の引用符',
         Expect<
             ValidationMessage<ParseFormatString<`'"'`>, 'format'>,
-            ToEqual<'単独の引用符"が使われています'>
+            ToEqual<'引用符"が単独で使用されています'>
         >
     >,
     ...It<
         '3. ValidationMessage: format: 書式指定子がない',
         Expect<
             ValidationMessage<ParseFormatString<"'abc'">, 'format'>,
-            ToEqual<'書式指定子がありません'>
+            ToEqual<'書式指定子が見つかりません'>
         >
     >,
     ...It<
         '4. ValidationMessage: format: 無効な書式指定子',
         Expect<
             ValidationMessage<ParseFormatString<'yyy-MM-ddd'>, 'format'>,
-            ToEqual<'無効な書式指定子です: yyy' | '無効な書式指定子です: ddd'>
+            ToEqual<'無効な書式指定子: yyy' | '無効な書式指定子: ddd'>
         >
     >,
     ...It<
@@ -506,42 +506,42 @@ declare const _test_ValidationMessage: [
         '9. ValidationMessage: parse: 解析エラー: 単独の引用符',
         Expect<
             ValidationMessage<ParseFormatString<`'"'`>, 'parse'>,
-            ToEqual<'単独の引用符"が使われています'>
+            ToEqual<'引用符"が単独で使用されています'>
         >
     >,
     ...It<
         '10. ValidationMessage: parse: 書式指定子がない',
         Expect<
             ValidationMessage<ParseFormatString<"'abc'">, 'parse'>,
-            ToEqual<'書式指定子がありません'>
+            ToEqual<'書式指定子が見つかりません'>
         >
     >,
     ...It<
         '11. ValidationMessage: parse: 無効な書式指定子',
         Expect<
             ValidationMessage<ParseFormatString<'yyy-MM-ddd'>, 'parse'>,
-            ToEqual<'無効な書式指定子です: yyy' | '無効な書式指定子です: ddd'>
+            ToEqual<'無効な書式指定子: yyy' | '無効な書式指定子: ddd'>
         >
     >,
     ...It<
         '12. ValidationMessage: parse日付と時刻の書式指定子がない(parseではエラー)',
         Expect<
             ValidationMessage<ParseFormatString<'E'>, 'parse'>,
-            ToEqual<'日付や時刻の書式指定子がありません'>
+            ToEqual<'日付または時刻の書式指定子がありません'>
         >
     >,
     ...It<
         '13. ValidationMessage: parse: 午前午後だけ(parseではエラー)',
         Expect<
             ValidationMessage<ParseFormatString<'a'>, 'parse'>,
-            ToEqual<'午前/午後(a)がある場合、12時間表記(h/hh)も必要です'>
+            ToEqual<'午前/午後(a)を使う場合、12時間表記(h/hh)が必要です'>
         >
     >,
     ...It<
         '14. ValidationMessage: parse: 12時間制の時間だけ(parseではエラー)',
         Expect<
             ValidationMessage<ParseFormatString<'h'>, 'parse'>,
-            ToEqual<'12時間表記(h/hh)がある場合、午前/午後(a)も必要です'>
+            ToEqual<'12時間表記(h/hh)を使う場合、午前/午後(a)が必要です'>
         >
     >,
 ];
@@ -603,21 +603,23 @@ declare const _tests_ValidateFormatString: [
         '4. ValidateFormatString for format: 書式指定子がありません(空文字列)',
         Expect<
             ValidateFormatString<'', 'format'>,
-            ToEqual<ValidationFailure<'書式指定子がありません: '>>
+            ToEqual<ValidationFailure<'書式指定子が見つかりません: '>>
         >
     >,
     ...It<
         '5. ValidateFormatString for format: 書式指定子がありません(リテラル文字列)',
         Expect<
             ValidateFormatString<"'yyyy-MM-dd'", 'format'>,
-            ToEqual<ValidationFailure<"書式指定子がありません: 'yyyy-MM-dd'">>
+            ToEqual<
+                ValidationFailure<"書式指定子が見つかりません: 'yyyy-MM-dd'">
+            >
         >
     >,
     ...It<
         '6. ValidateFormatString for format: 無効な書式指定子です',
         Expect<
             ValidateFormatString<'yyy-MM-dd', 'format'>,
-            ToEqual<ValidationFailure<'無効な書式指定子です: yyy: yyy-MM-dd'>>
+            ToEqual<ValidationFailure<'無効な書式指定子: yyy: yyy-MM-dd'>>
         >
     >,
     ...It<
@@ -849,21 +851,23 @@ declare const _tests_ValidateFormatString: [
         '4. ValidateFormatString for parse: 書式指定子がありません(空文字列)',
         Expect<
             ValidateFormatString<'', 'parse'>,
-            ToEqual<ValidationFailure<'書式指定子がありません: '>>
+            ToEqual<ValidationFailure<'書式指定子が見つかりません: '>>
         >
     >,
     ...It<
         '5. ValidateFormatString for parse: 書式指定子がありません(リテラル文字列)',
         Expect<
             ValidateFormatString<"'yyyy-MM-dd'", 'parse'>,
-            ToEqual<ValidationFailure<"書式指定子がありません: 'yyyy-MM-dd'">>
+            ToEqual<
+                ValidationFailure<"書式指定子が見つかりません: 'yyyy-MM-dd'">
+            >
         >
     >,
     ...It<
         '6. ValidateFormatString for parse: 無効な書式指定子です',
         Expect<
             ValidateFormatString<'yyy-MM-dd', 'parse'>,
-            ToEqual<ValidationFailure<'無効な書式指定子です: yyy: yyy-MM-dd'>>
+            ToEqual<ValidationFailure<'無効な書式指定子: yyy: yyy-MM-dd'>>
         >
     >,
     ...It<
@@ -1069,7 +1073,7 @@ declare const _tests_ValidateFormatString: [
         Expect<
             ValidateFormatString<`EEEE XXX`, 'parse'>,
             ToEqual<
-                ValidationFailure<'日付や時刻の書式指定子がありません: EEEE XXX'>
+                ValidationFailure<'日付または時刻の書式指定子がありません: EEEE XXX'>
             >
         >
     >,
@@ -1078,7 +1082,7 @@ declare const _tests_ValidateFormatString: [
         Expect<
             ValidateFormatString<`a`, 'parse'>,
             ToEqual<
-                ValidationFailure<'午前/午後(a)がある場合、12時間表記(h/hh)も必要です: a'>
+                ValidationFailure<'午前/午後(a)を使う場合、12時間表記(h/hh)が必要です: a'>
             >
         >
     >,
@@ -1087,7 +1091,7 @@ declare const _tests_ValidateFormatString: [
         Expect<
             ValidateFormatString<`h`, 'parse'>,
             ToEqual<
-                ValidationFailure<'12時間表記(h/hh)がある場合、午前/午後(a)も必要です: h'>
+                ValidationFailure<'12時間表記(h/hh)を使う場合、午前/午後(a)が必要です: h'>
             >
         >
     >,

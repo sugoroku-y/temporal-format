@@ -286,16 +286,16 @@ describe('parse', () => {
         expect(() =>
             // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
             parse('hello', "'hello'", reference),
-        ).toThrow("書式指定子がありません: 'hello'");
+        ).toThrow("書式指定子が見つかりません: 'hello'");
     });
     it('unsupported locale', () => {
         const reference = Temporal.Now.zonedDateTimeISO();
         expect(() =>
             parse('2020-11-31', 'yyyy-MM-dd', reference, {
-                // @ts-expect-error サポートしていないロケールを指定するとコンパイルエラーになる
+                // @ts-expect-error サポートされていないロケールを指定するとコンパイルエラーになる
                 locale: 'fr-FR',
             }),
-        ).toThrow('サポートしていないロケール: fr-FR');
+        ).toThrow('サポートされていないロケール: fr-FR');
     });
     it('unsupported overflow', () => {
         const reference = Temporal.Now.zonedDateTimeISO();
@@ -304,12 +304,12 @@ describe('parse', () => {
                 // @ts-expect-error サポートしていないoverflowを指定するとコンパイルエラーになる
                 overflow: 'unknown',
             }),
-        ).toThrow('サポートしていないオーバーフローの挙動: unknown');
+        ).toThrow('サポートされていないオーバーフローの挙動: unknown');
     });
     it('unsupported calender', () => {
         const reference = Temporal.Now.plainDateISO().withCalendar('gregory');
         expect(() => parse('', 'yyyy-MM-dd', reference)).toThrow(
-            '対応していないカレンダーです: gregory',
+            'サポートされていないカレンダーID: gregory',
         );
     });
     it('method with not found', () => {
@@ -564,21 +564,21 @@ describe('parse', () => {
                 // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 parse('', 'E EEE EEEE X XX XXX x xx xxx', reference),
             ).toThrow(
-                '日付や時刻の書式指定子がありません: E EEE EEEE X XX XXX x xx xxx',
+                '日付または時刻の書式指定子がありません: E EEE EEEE X XX XXX x xx xxx',
             );
             expect(() =>
                 // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 parse('', 'a', reference),
-            ).toThrow('午前/午後(a)がある場合、12時間表記(h/hh)も必要です');
+            ).toThrow('午前/午後(a)を使う場合、12時間表記(h/hh)が必要です');
             expect(() =>
                 // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 parse('', 'h', reference),
-            ).toThrow('12時間表記(h/hh)がある場合、午前/午後(a)も必要です');
+            ).toThrow('12時間表記(h/hh)を使う場合、午前/午後(a)が必要です');
             expect(() =>
                 // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする
                 parse('', 'a h H', reference),
             ).toThrow(
-                '12時間表記(h/hh)と24時間表記(H/HH)の両方を指定することはできません',
+                '12時間表記(h/hh)と24時間表記(H/HH)を同時に指定することはできません',
             );
             expect(() =>
                 // @ts-expect-error 例外のテストのためコンパイルエラーになるような呼び出しをする

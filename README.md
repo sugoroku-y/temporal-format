@@ -5,13 +5,13 @@
 ## インストール
 
 ```bash
-npm install temporal-format
+npm install @sugoroku-y/temporal-format
 ```
 
 ## 使い方
 
 ```ts
-import { format, parse } from 'temporal-format';
+import { format, parse } from '@sugoroku-y/temporal-format';
 
 const value = Temporal.ZonedDateTime.from(
     '2024-01-02T03:04:05+09:00[Asia/Tokyo]',

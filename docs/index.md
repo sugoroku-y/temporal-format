@@ -1,4 +1,4 @@
-# temporal-format
+# @sugoroku-y/temporal-format
 
 ## インターフェイス
 
