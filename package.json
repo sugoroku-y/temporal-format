@@ -1,5 +1,5 @@
 {
-  "name": "temporal-format",
+  "name": "@sugoroku-y/temporal-format",
   "version": "0.0.0",
   "type": "module",
   "main": "dist/index.cjs",
